@@ -23,6 +23,15 @@ else:
     import termios
     import tty
 
+# Disable readline tab completion — prevents Tab from triggering autocomplete
+# noise in the chat prompt and corrupting terminal state
+try:
+    import readline
+    readline.parse_and_bind('tab: self-insert')
+    readline.set_completer(None)
+except ImportError:
+    pass
+
 CORE_ID        = "rainbow-tech-v4.8-full"
 SESSIONS_DIR   = os.path.expanduser("~/.ollama-run/sessions")
 CONFIG_FILE    = os.path.expanduser("~/.ollama-run/config.json")
@@ -474,17 +483,18 @@ def get_key():
             tty.setraw(fd)
             ch = sys.stdin.read(1)
             if ch == '\x1b':
-                # Leer el segundo byte con timeout generoso
-                ready, _, _ = select.select([sys.stdin], [], [], 0.15)
-                if ready:
-                    ch2 = sys.stdin.read(1)
-                    ch += ch2
-                    # Si es secuencia CSI (\x1b[), el tercer byte es obligatorio — esperar sin timeout
-                    if ch2 == '[':
-                        ready3, _, _ = select.select([sys.stdin], [], [], 0.15)
-                        if ready3:
-                            ch += sys.stdin.read(1)
-                # Si no llegó nada tras \x1b → ESC puro
+                # Leer todos los bytes de la secuencia escape en bucle
+                # Se detiene cuando no llegan más bytes en 100ms (ESC puro)
+                # o cuando llega el carácter final de una secuencia CSI (letra o ~)
+                while True:
+                    ready, _, _ = select.select([sys.stdin], [], [], 0.1)
+                    if not ready:
+                        break  # no más bytes → ESC puro
+                    c = sys.stdin.read(1)
+                    ch += c
+                    # Fin de secuencia CSI: letra A-Z/a-z o '~'
+                    if c.isalpha() or c == '~':
+                        break
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
         return ch
