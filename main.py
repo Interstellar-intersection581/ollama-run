@@ -1327,15 +1327,45 @@ def chat(preloaded_msgs=None):
             # Los modelos vision no suelen soportar tools simultáneamente
             use_tools = active_tools if (active_tools and not img_b64) else None
 
-            force_prefix = None
             try:
+                thinking_text = ""
+
+                # ── Step 1: thinking (ON/FORCE) — separate call, no tools ──
+                if show_thinking and not img_b64:
+                    think_depth = "extensively and step by step" if session.thinking_mode == "FORCE" else "briefly"
+                    think_sys = (
+                        f"Think {think_depth} about the user's request. "
+                        "Output ONLY your internal reasoning — no greeting, no final answer, just raw thinking."
+                    )
+                    think_msgs = [{"role": "system", "content": think_sys}] + [
+                        m for m in msgs if m.get("role") != "system"
+                    ]
+                    print(f"\n  {C('THINK_L')}── Thinking ────────────────────────────{C_RESET}\n  {C('THINK')}", end="", flush=True)
+                    think_resp = client.chat(model=session.model, messages=think_msgs, stream=True)
+                    for chunk in think_resp:
+                        piece = chunk['message'].content
+                        if piece:
+                            thinking_text += piece
+                            print(f"{C('THINK')}{piece}{C_RESET}", end="", flush=True)
+                    print(f"\n  {C('DIM')}───────────────────────────────────────{C_RESET}", flush=True)
+
+                # ── Step 2: actual response ──
+                response_msgs = list(msgs)
+                if thinking_text:
+                    # Inject thinking as hidden context so response is informed by it
+                    response_msgs[-1] = {
+                        **msgs[-1],
+                        'content': msgs[-1]['content'] + f"\n\n[internal reasoning: {thinking_text}]"
+                    }
+
                 response = client.chat(
                     model=session.model,
-                    messages=msgs,
+                    messages=response_msgs,
                     tools=use_tools,
                     stream=True,
                 )
-                full_content = stream_response(response, show_thinking=show_thinking)
+                full_content = stream_response(response, show_thinking=False)
+
             except Exception as e:
                 msgs.pop()  # quitar el mensaje del usuario que falló
                 print(f"\n  {C('ERR')}✗ Error communicating with model: {e}{C_RESET}")
