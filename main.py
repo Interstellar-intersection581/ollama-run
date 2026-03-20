@@ -336,13 +336,20 @@ def get_key():
         try: return ch.decode('utf-8')
         except: return ""
     else:
+        import select
         fd = sys.stdin.fileno()
         old = termios.tcgetattr(fd)
         try:
             tty.setraw(fd)
             ch = sys.stdin.read(1)
             if ch == '\x1b':
-                ch += sys.stdin.read(2)
+                # Esperar brevemente más chars — si no llegan es ESC puro
+                ready, _, _ = select.select([sys.stdin], [], [], 0.08)
+                if ready:
+                    ch += sys.stdin.read(1)
+                    ready2, _, _ = select.select([sys.stdin], [], [], 0.04)
+                    if ready2:
+                        ch += sys.stdin.read(1)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
         return ch
@@ -500,52 +507,108 @@ def pull_model(model_name):
     print(); input(f"  {C('DIM')}[Enter]{C_RESET}")
 
 def fetch_ollama_models(query=""):
+    """Obtiene modelos de ollama.com/search parseando el HTML."""
     try:
-        url = f"https://ollama.com/api/models" + (f"?q={query}" if query else "")
-        resp = requests.get(url, timeout=8)
+        url = "https://ollama.com/search"
+        params = {"q": query, "sort": "newest"} if query else {"sort": "newest"}
+        headers = {"User-Agent": "Mozilla/5.0"}
+        resp = requests.get(url, params=params, headers=headers, timeout=10)
         if resp.status_code == 200:
-            data = resp.json()
-            return data.get('models', data) if isinstance(data, dict) else data
-    except Exception: pass
+            html = resp.text
+            models = []
+            # Extraer bloques de modelo del HTML
+            # Patrón: href="/library/nombre" y datos asociados
+            entries = re.findall(
+                r'href="/library/([^"]+)"[^>]*>.*?'
+                r'(?:<p[^>]*>([^<]{0,120})</p>)?'
+                r'(?:.*?(\d+\.?\d*[BbMmKk](?:/\d+\.?\d*[BbMmKk])*))?',
+                html, re.DOTALL
+            )
+            seen = set()
+            for e in entries:
+                name = e[0].strip().split('?')[0]
+                if not name or name in seen or '/' in name: continue
+                seen.add(name)
+                desc = re.sub(r'\s+', ' ', e[1]).strip() if e[1] else ''
+                params_str = e[2].strip() if e[2] else ''
+                models.append({
+                    "name": f"{name}:latest",
+                    "description": desc,
+                    "parameters": params_str,
+                    "updated": "",
+                })
+            if models:
+                return models
+    except Exception:
+        pass
+
+    # Fallback estático con los modelos más populares
     return [
-        {"name":"gemma3:latest",       "description":"Google Gemma 3 (2025)",       "parameters":"2B/9B/27B",  "updated":"2025-04"},
-        {"name":"llama3.3:latest",     "description":"Meta Llama 3.3 (2025)",        "parameters":"70B",        "updated":"2025-01"},
-        {"name":"qwq:latest",          "description":"Qwen QwQ reasoning",           "parameters":"32B",        "updated":"2025-01"},
-        {"name":"deepseek-r1:latest",  "description":"DeepSeek R1 reasoning",        "parameters":"1.5B–671B",  "updated":"2025-01"},
-        {"name":"phi4:latest",         "description":"Microsoft Phi-4",              "parameters":"14B",        "updated":"2025-01"},
-        {"name":"mistral:latest",      "description":"Mistral 7B v0.3",             "parameters":"7B",         "updated":"2024-06"},
-        {"name":"llama3.2:latest",     "description":"Meta Llama 3.2",              "parameters":"1B/3B",      "updated":"2024-09"},
-        {"name":"qwen2.5:latest",      "description":"Alibaba Qwen 2.5",            "parameters":"0.5B–72B",   "updated":"2024-09"},
-        {"name":"codellama:latest",    "description":"Meta Code Llama",             "parameters":"7B/13B/34B", "updated":"2024-01"},
-        {"name":"llava:latest",        "description":"LLaVA vision+language",        "parameters":"7B/13B/34B", "updated":"2024-02"},
+        {"name":"gemma3:latest",        "description":"Google Gemma 3",              "parameters":"2B/9B/27B",   "updated":"2025-04"},
+        {"name":"llama3.3:latest",      "description":"Meta Llama 3.3",              "parameters":"70B",         "updated":"2025-01"},
+        {"name":"qwq:latest",           "description":"Qwen QwQ reasoning",          "parameters":"32B",         "updated":"2025-01"},
+        {"name":"deepseek-r1:latest",   "description":"DeepSeek R1 reasoning",       "parameters":"1.5B/7B/8B/14B/32B/70B/671B", "updated":"2025-01"},
+        {"name":"phi4:latest",          "description":"Microsoft Phi-4",             "parameters":"14B",         "updated":"2025-01"},
+        {"name":"phi4-mini:latest",     "description":"Microsoft Phi-4 Mini",        "parameters":"3.8B",        "updated":"2025-02"},
+        {"name":"mistral:latest",       "description":"Mistral 7B v0.3",            "parameters":"7B",          "updated":"2024-06"},
+        {"name":"mixtral:latest",       "description":"Mistral MoE",                "parameters":"8x7B/8x22B",  "updated":"2024-04"},
+        {"name":"llama3.2:latest",      "description":"Meta Llama 3.2",             "parameters":"1B/3B",       "updated":"2024-09"},
+        {"name":"llama3.1:latest",      "description":"Meta Llama 3.1",             "parameters":"8B/70B/405B", "updated":"2024-07"},
+        {"name":"qwen2.5:latest",       "description":"Alibaba Qwen 2.5",           "parameters":"0.5B/1.5B/3B/7B/14B/32B/72B", "updated":"2024-09"},
+        {"name":"qwen2.5-coder:latest", "description":"Qwen 2.5 Coder",            "parameters":"1.5B/7B/14B/32B", "updated":"2024-11"},
+        {"name":"codellama:latest",     "description":"Meta Code Llama",            "parameters":"7B/13B/34B",  "updated":"2024-01"},
+        {"name":"llava:latest",         "description":"LLaVA vision+language",       "parameters":"7B/13B/34B",  "updated":"2024-02"},
+        {"name":"nomic-embed-text",     "description":"Text embeddings",             "parameters":"137M",        "updated":"2024-02"},
+        {"name":"mxbai-embed-large",    "description":"MixedBread embeddings",       "parameters":"334M",        "updated":"2024-03"},
+        {"name":"neural-chat:latest",   "description":"Intel Neural Chat",           "parameters":"7B",          "updated":"2024-01"},
+        {"name":"starling-lm:latest",   "description":"Starling LM",                "parameters":"7B",          "updated":"2024-01"},
+        {"name":"vicuna:latest",        "description":"Vicuna UC Berkeley",          "parameters":"7B/13B",      "updated":"2023-12"},
+        {"name":"orca-mini:latest",     "description":"Orca Mini",                  "parameters":"3B/7B/13B",   "updated":"2023-11"},
     ]
 
 def show_model_detail(model_info):
-    clear_screen(); print(get_banner())
     name   = model_info.get('name', str(model_info))
     desc   = model_info.get('description', '')
     params = model_info.get('parameters', 'N/A')
     upd    = model_info.get('updated', 'N/A')
-    print(f"\n  {C('ACCENT')}DETALLES{C_RESET}\n")
-    print(f"  {C('RESP')}Nombre:{C_RESET}      {name}")
-    if desc: print(f"  {C('RESP')}Descripción:{C_RESET} {desc}")
-    print(f"  {C('RESP')}Parámetros:{C_RESET}  {params}")
-    print(f"  {C('RESP')}Actualizado:{C_RESET} {upd}")
-    if isinstance(params, str) and '/' in params:
-        base = name.split(':')[0]
-        print(f"\n  {C('INFO')}Variantes:{C_RESET}")
-        for s in params.split('/'):
-            print(f"    {C('DIM')}→{C_RESET} {base}:{s.strip().lower()}")
-    print(f"\n  {C('INFO')}[Enter] Descargar   [ESC] Volver{C_RESET}\n")
-    key = get_key()
-    if key in ['\r','\n','\r\n']:
-        base_name = name.split(':')[0]
-        if isinstance(params, str) and '/' in params:
-            tags = [f"{base_name}:{s.strip().lower()}" for s in params.split('/')] + [f"{base_name}:latest"]
-            choice = interactive_menu(tags, f"VARIANTE: {base_name}")
-            if choice: pull_model(choice)
-        else:
-            pull_model(name)
+    base_name = name.split(':')[0]
+
+    # Construir lista de variantes seleccionables
+    if isinstance(params, str) and ('/' in params or '–' in params or '-' in params):
+        # Separar por / para variantes
+        raw_sizes = [s.strip() for s in params.replace('–','/').replace('-','/').split('/')]
+        tags = []
+        for s in raw_sizes:
+            # Limpiar: "1.5B" → "1.5b", "671B" → "671b"
+            tag = re.sub(r'\s+', '', s).lower()
+            if tag and not tag.startswith('latest'):
+                tags.append(f"{base_name}:{tag}")
+        tags.append(f"{base_name}:latest")
+    else:
+        tags = [name]
+
+    # Menú de variantes con info del modelo arriba
+    idx = 0
+    while True:
+        clear_screen(); print(get_banner())
+        print(f"\n  {C('ACCENT')}DETALLES{C_RESET}  {C('DIM')}{base_name}{C_RESET}\n")
+        print(f"  {C('RESP')}Descripción:{C_RESET} {desc}")
+        print(f"  {C('RESP')}Parámetros:{C_RESET}  {params}")
+        print(f"  {C('RESP')}Actualizado:{C_RESET} {upd}")
+        print(f"\n  {C('INFO')}Variantes disponibles:{C_RESET}  {C('DIM')}[↑↓] navegar  [Enter] descargar  [ESC] volver{C_RESET}\n")
+        for i, tag in enumerate(tags):
+            if i == idx:
+                print(f"  {C('SEL')}> {tag}{C_RESET}")
+            else:
+                print(f"    {C('INFO')}{tag}{C_RESET}")
+
+        key = get_key()
+        if key == '\x1b': break
+        elif key == '\x1b[A': idx = (idx - 1) % len(tags)
+        elif key == '\x1b[B': idx = (idx + 1) % len(tags)
+        elif key in ['\r','\n','\r\n']:
+            pull_model(tags[idx])
+            break
 
 def search_models():
     query = ""; models = []; loading = True
