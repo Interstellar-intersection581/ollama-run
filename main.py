@@ -842,24 +842,57 @@ def load_image_b64(path):
     with open(path, 'rb') as f:
         return base64.b64encode(f.read()).decode()
 
+IMG_EXTS = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif', '.avif')
+
 def parse_image_input(inp):
     """
-    Detecta si el input contiene una imagen.
-    Formatos soportados:
-      /img ruta_o_url [texto opcional]
-      /image ruta_o_url [texto opcional]
-    Devuelve (texto, img_b64) o (inp, None).
+    Detecta si el input contiene una imagen. Formatos:
+      /img <ruta|url> [texto]     — comando explícito
+      /image <ruta|url> [texto]   — alias
+      <ruta_imagen>               — arrastrar archivo al terminal (ruta suelta)
+      <ruta_imagen> <texto>       — ruta + pregunta
+      file://<ruta>               — prefijo file:// que algunos terminales añaden
+    Devuelve (texto, ruta) o (inp, None).
     """
+    IMG_EXTS_SET = set(IMG_EXTS)
+
+    # 1. Comando explícito /img o /image
     for prefix in ('/img ', '/image '):
         if inp.lower().startswith(prefix):
             rest = inp[len(prefix):].strip()
-            # Separar ruta del texto: si hay espacio después de la extensión de imagen
-            img_exts = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')
-            # Intentar detectar dónde termina la ruta
             parts = rest.split(' ', 1)
-            img_path = parts[0]
-            text = parts[1] if len(parts) > 1 else "Describe esta imagen."
-            return text, img_path
+            return (parts[1] if len(parts) > 1 else "Describe esta imagen."), parts[0]
+
+    # 2. Prefijo file:// (drag desde algunos file managers)
+    clean = inp.strip().strip("'\"")
+    if clean.startswith('file://'):
+        from urllib.parse import unquote
+        path = unquote(clean[7:])
+        if os.path.splitext(path)[1].lower() in IMG_EXTS_SET:
+            return "Describe esta imagen.", path
+
+    # 3. Ruta suelta — puede tener texto después
+    #    Buscar la primera "palabra" que sea un path de imagen existente
+    #    (cubre rutas con espacios escapados que el terminal pega con \ )
+    unescaped = clean.replace('\\ ', ' ')
+    # Intentar el input completo primero, luego la primera "palabra"
+    candidates = [unescaped]
+    if ' ' in unescaped:
+        # primera parte podría ser ruta, resto texto
+        idx = unescaped.rfind(' ')
+        # recorre de derecha a izquierda buscando extensión de imagen
+        for i in range(len(unescaped), 0, -1):
+            part = unescaped[:i]
+            if os.path.splitext(part)[1].lower() in IMG_EXTS_SET:
+                candidates.insert(0, part)
+                break
+
+    for cand in candidates:
+        cand_exp = os.path.expandvars(os.path.expanduser(cand))
+        if os.path.splitext(cand_exp)[1].lower() in IMG_EXTS_SET and os.path.exists(cand_exp):
+            text_after = unescaped[len(cand):].strip()
+            return (text_after if text_after else "Describe esta imagen."), cand_exp
+
     return inp, None
 
 def chat(preloaded_msgs=None):
