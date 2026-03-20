@@ -33,11 +33,17 @@ def _cmd_completer(text, state):
         return matches[state] if state < len(matches) else None
     return None
 
+HISTORY_FILE = os.path.expanduser("~/.ollama-run/input_history")
 try:
     import readline
     readline.set_completer(_cmd_completer)
-    readline.set_completer_delims('')   # treat the whole line as one token
+    readline.set_completer_delims('')
     readline.parse_and_bind('tab: complete')
+    try:
+        readline.read_history_file(HISTORY_FILE)
+    except FileNotFoundError:
+        pass
+    readline.set_history_length(500)
 except ImportError:
     pass
 
@@ -1099,6 +1105,30 @@ def chat(preloaded_msgs=None):
                     print(f"\n  {C('OK')}✓ Conversation loaded ({len([m for m in msgs if m['role']=='user'])} messages){C_RESET}\n")
                 clear_screen(); print(get_banner()); print_status(); continue
 
+            # ── Shell command (!cmd) ──
+            if inp.startswith('!'):
+                cmd = inp[1:].strip()
+                if cmd:
+                    print(f"\n  {C('TOOL')}$ {cmd}{C_RESET}")
+                    try:
+                        result = subprocess.run(
+                            cmd, shell=True, capture_output=True, text=True, timeout=30
+                        )
+                        output = (result.stdout + result.stderr).strip()
+                    except subprocess.TimeoutExpired:
+                        output = "[timeout after 30s]"
+                    except Exception as e:
+                        output = f"[error: {e}]"
+                    if output:
+                        print(f"{C('TOOL_R')}{output}{C_RESET}\n")
+                    else:
+                        print(f"  {C('DIM')}(no output){C_RESET}\n")
+                    # Inject into conversation so model sees it
+                    shell_ctx = f"Shell command run by user:\n$ {cmd}\n{output or '(no output)'}"
+                    msgs.append({'role': 'user', 'content': shell_ctx})
+                    msgs.append({'role': 'assistant', 'content': 'Noted.'})
+                continue
+
             # ── Imagen ──
             text, img_path = parse_image_input(inp)
             img_b64 = None
@@ -1314,6 +1344,12 @@ def main():
         chat()
     finally:
         stop_ollama_if_we_started()
+        try:
+            import readline as _rl
+            os.makedirs(os.path.dirname(HISTORY_FILE), exist_ok=True)
+            _rl.write_history_file(HISTORY_FILE)
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     main()
