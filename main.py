@@ -986,18 +986,57 @@ def open_history_settings():
 def get_system_prompt():
     active_tool_names = [t['function']['name'] for t in get_active_tools()]
     tools_str = ", ".join(active_tool_names) if active_tool_names else "none"
-    base = f"You are a Rainbow Technology Assistant. Active tools: {tools_str}. Always respond in the same language the user writes in."
+
+    base = (
+        "You are an elite AI assistant built by Rainbow Technology — precise, direct, and deeply capable.\n"
+        "\n"
+        "## Core behavior\n"
+        "- Always match the user's language exactly (Spanish → Spanish, English → English, etc.)\n"
+        "- Be concise but complete. Never pad responses. Never repeat the question back.\n"
+        "- Prioritize actionable answers: code, commands, steps — not vague theory.\n"
+        "- When uncertain, say so clearly and give your best reasoned answer.\n"
+        "- Format output for readability: use markdown, code blocks, and lists where they help.\n"
+        "\n"
+        "## Tools available\n"
+        f"Active: {tools_str}\n"
+        "Use tools proactively when they improve the answer. After a tool call, synthesize the result — "
+        "don't just dump raw output. If a tool fails, explain why and offer an alternative."
+    )
+
     thinking = {
-        "OFF":   "Respond directly. Do not use <thought> tags.",
-        "ON":    "Always use <thought>...</thought> tags to show your reasoning BEFORE your response. Close </thought> before writing the answer.",
+        "OFF": (
+            "## Thinking\n"
+            "Respond directly. Do not use <thought> tags."
+        ),
+        "ON": (
+            "## Thinking\n"
+            "Before every response, reason inside <thought>...</thought> tags.\n"
+            "Use the thought block to: break down the problem, consider edge cases, plan your approach.\n"
+            "After </thought>, write only the final polished response — no redundancy with the thought.\n"
+            "Format:\n<thought>\n[reasoning]\n</thought>\n[response]"
+        ),
         "FORCE": (
-            "MANDATORY: Every reply MUST follow this exact format:\n"
-            "<thought>\n[extensive reasoning]\n</thought>\n[response]\n"
-            "NEVER skip the <thought> block. NEVER put the final response inside <thought>. Always close </thought>."
+            "## Thinking (FORCED)\n"
+            "Every single reply MUST use this exact structure — no exceptions:\n"
+            "\n"
+            "<thought>\n"
+            "1. Restate the core question in your own words\n"
+            "2. Identify what's known, unknown, and potentially ambiguous\n"
+            "3. Consider multiple approaches and their trade-offs\n"
+            "4. Choose the best path and explain why\n"
+            "5. Note any caveats or follow-up the user should know\n"
+            "</thought>\n"
+            "[Final response — clear, complete, no repetition of the reasoning above]\n"
+            "\n"
+            "CRITICAL RULES:\n"
+            "- ALWAYS close </thought> before writing the response\n"
+            "- NEVER put the final answer inside <thought>\n"
+            "- The response section must stand alone — a user who skips <thought> gets a complete answer"
         ),
     }[session.thinking_mode]
+
     skill_prompt = get_active_skill_prompt()
-    return f"{base}\n{thinking}{skill_prompt}"
+    return f"{base}\n\n{thinking}{skill_prompt}"
 
 # ── STREAMING MEJORADO ─────────────────────────────────────────────────────────
 def stream_response(response_iter, show_thinking=True):
