@@ -126,6 +126,8 @@ ALL_TOOLS = [
     {'type':'function','function':{'name':'execute_shell','description':'Comandos Bash.','parameters':{'type':'object','properties':{'command':{'type':'string'}},'required':['command']}}},
     {'type':'function','function':{'name':'logseq_io','description':'Logseq.','parameters':{'type':'object','properties':{'action':{'type':'string','enum':['read','write','append']},'page_name':{'type':'string'},'content':{'type':'string'}},'required':['action','page_name']}}},
     {'type':'function','function':{'name':'get_system_status','description':'Estado del sistema.','parameters':{'type':'object','properties':{}}}},
+    {'type':'function','function':{'name':'describe_image','description':'Analiza y describe el contenido visual de una imagen usando un modelo vision. Úsala cuando el usuario mande una imagen o pregunte qué hay en ella.','parameters':{'type':'object','properties':{'image_path':{'type':'string','description':'Ruta local o URL de la imagen'},'question':{'type':'string','description':'Pregunta específica sobre la imagen'}},'required':['image_path']}}},
+    {'type':'function','function':{'name':'ocr_image','description':'Extrae texto de una imagen mediante OCR (reconocimiento óptico de caracteres). Ideal para capturas de pantalla, documentos escaneados, fotos de texto.','parameters':{'type':'object','properties':{'image_path':{'type':'string','description':'Ruta local o URL de la imagen'},'lang':{'type':'string','description':'Idioma para OCR, ej: spa, eng, fra (default: spa+eng)'}},'required':['image_path']}}},
 ]
 
 def get_active_tools():
@@ -240,7 +242,108 @@ def logseq_io(action, page_name, content=None):
     except Exception as e:
         print_tool_result("logseq", f"ERROR: {e}"); return str(e)
 
-funcs = {'web_search': web_search, 'execute_shell': execute_shell, 'logseq_io': logseq_io, 'get_system_status': get_system_status}
+def describe_image(image_path, question=None):
+    """Usa el primer modelo vision disponible para describir una imagen."""
+    print_tool_msg(f"Analizando imagen: {image_path}…")
+    # Buscar modelo vision disponible localmente
+    vision_model = None
+    try:
+        local_models = [m.model for m in client.list().models]
+        for m in local_models:
+            if is_vision_model(m):
+                vision_model = m
+                break
+    except Exception:
+        pass
+
+    if not vision_model:
+        result = "No hay ningún modelo vision instalado. Instala llava, moondream o similar con /pull llava"
+        print_tool_result("describe_image", result)
+        return result
+
+    try:
+        img_b64 = load_image_b64(image_path)
+        prompt = question or "Describe detalladamente el contenido de esta imagen."
+        resp = client.chat(
+            model=vision_model,
+            messages=[{'role': 'user', 'content': prompt, 'images': [img_b64]}],
+            stream=False,
+        )
+        description = resp['message']['content']
+        print_tool_result("describe_image", f"[{vision_model}] {description[:120]}")
+        return description
+    except Exception as e:
+        result = f"Error al analizar imagen: {e}"
+        print_tool_result("describe_image", result)
+        return result
+
+def ocr_image(image_path, lang=None):
+    """Extrae texto de una imagen con OCR (tesseract)."""
+    print_tool_msg(f"OCR: {image_path}…")
+    lang = lang or "spa+eng"
+    # Descargar si es URL
+    local_path = image_path.strip().strip("'\"")
+    tmp_file = None
+    try:
+        if local_path.startswith('http://') or local_path.startswith('https://'):
+            import tempfile
+            resp = requests.get(local_path, timeout=15)
+            resp.raise_for_status()
+            suffix = os.path.splitext(local_path)[1] or '.png'
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+            tmp.write(resp.content); tmp.close()
+            tmp_file = local_path = tmp.name
+        else:
+            local_path = os.path.expandvars(os.path.expanduser(local_path))
+
+        # Intentar pytesseract primero
+        try:
+            import pytesseract
+            from PIL import Image as PILImage
+            img = PILImage.open(local_path)
+            text = pytesseract.image_to_string(img, lang=lang)
+            print_tool_result("ocr_image", text[:120] or "(sin texto)")
+            return text.strip() or "(No se detectó texto)"
+        except ImportError:
+            pass
+
+        # Fallback: tesseract CLI
+        if shutil.which('tesseract'):
+            import tempfile
+            out_base = tempfile.mktemp()
+            subprocess.run(
+                ['tesseract', local_path, out_base, '-l', lang],
+                capture_output=True, timeout=30
+            )
+            out_file = out_base + '.txt'
+            if os.path.exists(out_file):
+                with open(out_file) as f: text = f.read()
+                os.remove(out_file)
+                print_tool_result("ocr_image", text[:120] or "(sin texto)")
+                return text.strip() or "(No se detectó texto)"
+
+        result = ("OCR no disponible. Instala tesseract:\n"
+                  "  Linux: sudo apt install tesseract-ocr tesseract-ocr-spa\n"
+                  "  macOS: brew install tesseract\n"
+                  "  Python: pip install pytesseract pillow")
+        print_tool_result("ocr_image", result)
+        return result
+    except Exception as e:
+        result = f"Error OCR: {e}"
+        print_tool_result("ocr_image", result)
+        return result
+    finally:
+        if tmp_file and os.path.exists(tmp_file):
+            os.remove(tmp_file)
+
+funcs = {
+    'web_search': web_search,
+    'execute_shell': execute_shell,
+    'logseq_io': logseq_io,
+    'get_system_status': get_system_status,
+    'describe_image': describe_image,
+    'ocr_image': ocr_image,
+}
 
 # ── HISTORIAL DE SESIONES ──────────────────────────────────────────────────────
 def save_session(msgs, session_id=None):
@@ -939,18 +1042,28 @@ def chat(preloaded_msgs=None):
             text, img_path = parse_image_input(inp)
             img_b64 = None
             if img_path:
-                if not is_vision_model(session.model):
-                    print(f"\n  {C('WARN')}⚠ El modelo '{session.model}' puede no soportar imágenes.")
-                    print(f"  {C('DIM')}Modelos vision: llava, moondream, gemma3, llama3.2-vision…{C_RESET}")
-                    print(f"  {C('DIM')}Intentando de todas formas…{C_RESET}\n")
-                try:
-                    print(f"  {C('DIM')}Cargando imagen…{C_RESET}", end="", flush=True)
-                    img_b64 = load_image_b64(img_path)
-                    print(f"\r  {C('OK')}✓ Imagen cargada ({len(img_b64)//1024}KB){C_RESET}\n")
-                    inp = text
-                except Exception as e:
-                    print(f"\r  {C('ERR')}✗ No se pudo cargar la imagen: {e}{C_RESET}\n")
-                    continue
+                if is_vision_model(session.model):
+                    # Modelo vision nativo: cargar imagen en base64
+                    try:
+                        print(f"  {C('DIM')}Cargando imagen…{C_RESET}", end="", flush=True)
+                        img_b64 = load_image_b64(img_path)
+                        print(f"\r  {C('OK')}✓ Imagen cargada ({len(img_b64)//1024}KB){C_RESET}\n")
+                        inp = text
+                    except Exception as e:
+                        print(f"\r  {C('ERR')}✗ No se pudo cargar la imagen: {e}{C_RESET}\n")
+                        continue
+                else:
+                    # Modelo sin vision: redirigir a tool describe_image/ocr_image
+                    tool_enabled_names = [t['function']['name'] for t in get_active_tools()]
+                    if 'describe_image' in tool_enabled_names or 'ocr_image' in tool_enabled_names:
+                        print(f"  {C('INFO')}El modelo no es vision — usando tools para analizar la imagen…{C_RESET}\n")
+                        # Inyectar la ruta en el mensaje para que el modelo llame la tool
+                        inp = f"{text}\nImagen a analizar: {img_path}"
+                        img_path = None  # no enviar como imagen nativa
+                    else:
+                        print(f"\n  {C('WARN')}⚠ Modelo sin vision y tools describe_image/ocr_image desactivadas.")
+                        print(f"  {C('DIM')}Activa las tools en /tools o usa un modelo vision.{C_RESET}\n")
+                        continue
 
             # Construir mensaje de usuario
             if img_b64:
