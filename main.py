@@ -161,16 +161,42 @@ def get_active_tools():
 
 # ── SKILLS CATALOG ─────────────────────────────────────────────────────────────
 BUILTIN_SKILLS = [
-    {"name": "code_review",   "description": "Revisa código en busca de bugs, mejoras y estilo", "prompt": "Eres un experto en code review. Analiza el código presentado detallando bugs, mejoras de rendimiento, legibilidad y mejores prácticas. Sé preciso y constructivo."},
-    {"name": "translate",     "description": "Traducción precisa entre idiomas",                 "prompt": "Eres un traductor profesional experto. Detecta el idioma origen automáticamente y traduce al idioma destino solicitado con precisión, preservando el tono y contexto."},
-    {"name": "summarize",     "description": "Resume textos largos de forma concisa",            "prompt": "Eres un experto en síntesis. Resume el texto dado de forma clara y estructurada, extrayendo los puntos clave, manteniendo la esencia sin perder información crítica."},
-    {"name": "math_solver",   "description": "Resuelve problemas matemáticos paso a paso",      "prompt": "Eres un matemático experto. Resuelve cada problema paso a paso de forma clara, mostrando el razonamiento completo y verificando el resultado."},
-    {"name": "sql_expert",    "description": "Genera y optimiza queries SQL",                   "prompt": "Eres un DBA experto en SQL. Genera queries optimizadas, explica el plan de ejecución y sugiere índices cuando sea relevante. Soporta PostgreSQL, MySQL y SQLite."},
-    {"name": "regex_builder", "description": "Construye y explica expresiones regulares",       "prompt": "Eres un experto en expresiones regulares. Construye el regex solicitado, explica cada parte y proporciona ejemplos de matches y non-matches."},
-    {"name": "git_helper",    "description": "Ayuda con comandos y flujos de Git",              "prompt": "Eres un experto en Git y control de versiones. Proporciona comandos exactos, explica los efectos y advierte sobre operaciones destructivas."},
-    {"name": "api_designer",  "description": "Diseña y documenta APIs REST/GraphQL",            "prompt": "Eres un arquitecto de APIs. Diseña endpoints RESTful o schemas GraphQL siguiendo mejores prácticas, con ejemplos de request/response y consideraciones de autenticación."},
-    {"name": "security_audit","description": "Analiza código en busca de vulnerabilidades",     "prompt": "Eres un experto en seguridad (OWASP). Analiza el código buscando vulnerabilidades como injection, XSS, CSRF, auth issues. Clasifica por severidad y sugiere mitigaciones."},
-    {"name": "doc_writer",    "description": "Genera documentación técnica profesional",        "prompt": "Eres un technical writer experto. Genera documentación clara, completa y bien estructurada con ejemplos prácticos, siguiendo el formato solicitado (README, docstring, wiki)."},
+    # ── Code & Dev ──────────────────────────────────────────────────────────────
+    {"name": "code_review",     "description": "Review code for bugs, style and improvements",       "prompt": "You are a senior code reviewer. Analyze the presented code for bugs, performance issues, readability and best practices. Be precise and constructive. Show fixed snippets when relevant."},
+    {"name": "refactor",        "description": "Refactor code for clarity and maintainability",      "prompt": "You are a refactoring expert. Improve the given code's structure, naming and readability without changing behavior. Explain each change."},
+    {"name": "debug",           "description": "Find and fix bugs step by step",                     "prompt": "You are an expert debugger. Analyze the code or error, identify the root cause step by step, and provide a clear fix with explanation."},
+    {"name": "test_writer",     "description": "Write unit and integration tests",                   "prompt": "You are a testing expert. Write comprehensive unit and integration tests for the given code. Use the project's existing test framework. Cover edge cases and failure paths."},
+    {"name": "doc_writer",      "description": "Generate technical documentation",                   "prompt": "You are a technical writer. Generate clear, complete documentation with examples in the requested format (README, docstring, wiki, JSDoc, etc)."},
+    {"name": "sql_expert",      "description": "Generate and optimize SQL queries",                  "prompt": "You are a database expert. Generate optimized SQL queries, explain execution plans and suggest indexes. Support PostgreSQL, MySQL and SQLite."},
+    {"name": "regex_builder",   "description": "Build and explain regular expressions",              "prompt": "You are a regex expert. Build the requested regex, explain each part and provide match/non-match examples."},
+    {"name": "git_helper",      "description": "Help with Git commands and workflows",               "prompt": "You are a Git expert. Provide exact commands, explain their effects and warn about destructive operations."},
+    {"name": "api_designer",    "description": "Design and document REST/GraphQL APIs",              "prompt": "You are an API architect. Design RESTful endpoints or GraphQL schemas following best practices, with request/response examples and auth considerations."},
+    {"name": "security_audit",  "description": "Audit code for vulnerabilities (OWASP)",             "prompt": "You are an application security expert (OWASP Top 10). Analyze code for injection, XSS, CSRF, auth issues and more. Classify by severity and suggest mitigations."},
+    {"name": "performance",     "description": "Profile and optimize code performance",              "prompt": "You are a performance engineer. Identify bottlenecks, suggest algorithmic improvements, caching strategies and profiling approaches for the given code."},
+    {"name": "architect",       "description": "System design and architecture decisions",           "prompt": "You are a senior software architect. Design scalable, maintainable systems. Discuss trade-offs, patterns (microservices, event-driven, CQRS) and draw ASCII diagrams when helpful."},
+    {"name": "devops",          "description": "CI/CD, Docker, Kubernetes, infrastructure",         "prompt": "You are a DevOps engineer. Help with Docker, Kubernetes, CI/CD pipelines, Terraform and cloud infrastructure. Provide production-ready configs."},
+    {"name": "shell_expert",    "description": "Write and explain bash/shell scripts",               "prompt": "You are a shell scripting expert. Write robust bash scripts with error handling, explain each part and warn about portability issues."},
+    {"name": "python_expert",   "description": "Python best practices and idiomatic code",           "prompt": "You are a Python expert. Write idiomatic, Pythonic code following PEP 8. Use type hints, dataclasses, generators and other modern Python features where appropriate."},
+    {"name": "javascript",      "description": "Modern JS/TS, React, Node.js",                      "prompt": "You are a JavaScript/TypeScript expert. Write modern ES2024+ code, use proper async patterns, and apply React/Node.js best practices."},
+    {"name": "rust_expert",     "description": "Rust ownership, lifetimes and idioms",               "prompt": "You are a Rust expert. Write safe, idiomatic Rust. Explain ownership, borrowing and lifetimes clearly. Prefer zero-cost abstractions and avoid unnecessary clones."},
+    {"name": "go_expert",       "description": "Go idioms, goroutines and interfaces",               "prompt": "You are a Go expert. Write idiomatic Go: simple interfaces, goroutines, channels and proper error handling. Follow effective Go guidelines."},
+    # ── AI & Data ───────────────────────────────────────────────────────────────
+    {"name": "prompt_engineer", "description": "Craft effective prompts for LLMs",                  "prompt": "You are a prompt engineering expert. Design clear, effective prompts for LLMs. Apply techniques like chain-of-thought, few-shot, role prompting and output structuring."},
+    {"name": "data_analyst",    "description": "Analyze data, statistics and visualizations",       "prompt": "You are a data analyst. Analyze datasets, identify patterns, suggest visualizations and provide statistical insights. Use Python (pandas, matplotlib) when showing code."},
+    {"name": "ml_engineer",     "description": "Machine learning models and pipelines",              "prompt": "You are an ML engineer. Design and debug machine learning pipelines, choose appropriate models, tune hyperparameters and explain evaluation metrics."},
+    # ── Writing & Communication ─────────────────────────────────────────────────
+    {"name": "translate",       "description": "Precise translation between languages",              "prompt": "You are a professional translator. Detect the source language automatically and translate with precision, preserving tone and context."},
+    {"name": "summarize",       "description": "Summarize long texts concisely",                    "prompt": "You are a summarization expert. Summarize the given text clearly and structurally, extracting key points without losing critical information."},
+    {"name": "copywriter",      "description": "Persuasive marketing and UX copy",                  "prompt": "You are a professional copywriter. Write clear, persuasive copy for landing pages, ads, emails or UX microcopy. Adapt tone to the brand voice."},
+    {"name": "email_writer",    "description": "Write professional emails and responses",           "prompt": "You are an expert at professional communication. Write concise, clear and appropriately-toned emails. Ask for missing context if needed."},
+    {"name": "interviewer",     "description": "Mock technical interview practice",                  "prompt": "You are a technical interviewer at a top tech company. Conduct a realistic mock interview for the requested role. Ask one question at a time, evaluate answers and give feedback."},
+    # ── Math & Science ──────────────────────────────────────────────────────────
+    {"name": "math_solver",     "description": "Solve math problems step by step",                  "prompt": "You are a math expert. Solve each problem step by step, showing full reasoning and verifying the result. Use LaTeX notation for formulas when helpful."},
+    {"name": "latex_helper",    "description": "Write and format LaTeX documents",                  "prompt": "You are a LaTeX expert. Write well-formatted LaTeX for math, papers and presentations. Explain the structure and fix compilation errors."},
+    # ── Productivity ────────────────────────────────────────────────────────────
+    {"name": "brainstorm",      "description": "Generate and expand creative ideas",                "prompt": "You are a creative thinking facilitator. Generate diverse, original ideas using techniques like SCAMPER, lateral thinking and mind mapping. Push beyond the obvious."},
+    {"name": "planner",         "description": "Break goals into actionable plans",                 "prompt": "You are a productivity expert. Break down goals into concrete, prioritized action steps with time estimates. Identify dependencies and potential blockers."},
+    {"name": "linux_admin",     "description": "Linux system administration and troubleshooting",   "prompt": "You are a Linux sysadmin. Provide exact commands for system administration, explain what they do and warn about risks. Cover permissions, networking, processes and logs."},
 ]
 
 def load_skills_catalog():
@@ -183,19 +209,34 @@ def load_skills_catalog():
     return catalog
 
 def search_skills_online(query):
-    """Busca skills en un registro online (simulado con búsqueda web)."""
+    """Search skills: filter builtin catalog + web fallback for unknown topics."""
+    q = query.lower()
+    # 1. Match from full builtin catalog (not just currently installed)
+    matches = [
+        s for s in BUILTIN_SKILLS
+        if q in s['name'].lower() or q in s['description'].lower()
+    ]
+    if matches:
+        return matches
+    # 2. Web fallback: synthesize a skill from DuckDuckGo snippet
     try:
         with DDGS() as ddgs:
-            results = list(ddgs.text(f"ollama AI assistant skill prompt {query}", max_results=5))
+            results = list(ddgs.text(f"AI assistant expert {query} system prompt", max_results=3))
         skills = []
         for r in results:
+            name = re.sub(r'[^a-z0-9_]', '_', query.lower()[:30]).strip('_')
             skills.append({
-                "name": re.sub(r'[^a-z0-9_]', '_', r['title'][:30].lower()).strip('_'),
+                "name": name,
                 "description": r['body'][:100],
-                "prompt": f"Actúa como experto en {r['title']}. {r['body'][:200]}",
-                "_source": r['href'],
+                "prompt": f"You are an expert in {query}. {r['body'][:300]}",
             })
-        return skills
+        # Deduplicate by name
+        seen = set()
+        unique = []
+        for s in skills:
+            if s['name'] not in seen:
+                seen.add(s['name']); unique.append(s)
+        return unique
     except Exception:
         return []
 
