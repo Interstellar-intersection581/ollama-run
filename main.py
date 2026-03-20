@@ -986,7 +986,7 @@ def open_history_settings():
 def get_system_prompt():
     active_tool_names = [t['function']['name'] for t in get_active_tools()]
     tools_str = ", ".join(active_tool_names) if active_tool_names else "none"
-    base = f"You are a Rainbow Technology Assistant. Active tools: {tools_str}."
+    base = f"You are a Rainbow Technology Assistant. Active tools: {tools_str}. Always respond in the same language the user writes in."
     thinking = {
         "OFF":   "Respond directly without tags.",
         "ON":    "Use <thought>...</thought> tags to reason BEFORE responding.",
