@@ -898,30 +898,110 @@ def chat(preloaded_msgs=None):
 
     save_session(msgs, session_id)
 
+# ── OLLAMA SERVE AUTO-START ────────────────────────────────────────────────────
+_ollama_proc = None  # proceso ollama serve lanzado por nosotros
+
+def _get_ollama_install_hint():
+    """Instrucciones de instalación según el SO."""
+    if sys.platform == 'win32':
+        return "Descárgalo en: https://ollama.com/download/windows"
+    elif sys.platform == 'darwin':
+        return "Instálalo con: brew install ollama  o  https://ollama.com/download/mac"
+    else:
+        return "Instálalo con: curl -fsSL https://ollama.com/install.sh | sh"
+
+def ensure_ollama_running():
+    """Comprueba si ollama está corriendo; si no, lo arranca en segundo plano."""
+    global _ollama_proc
+    import time
+
+    # 1. Intentar conectar
+    try:
+        client.list()
+        return True
+    except Exception:
+        pass
+
+    # 2. Comprobar si el binario existe
+    if not shutil.which('ollama'):
+        clear_screen(); print(get_banner())
+        print(f"\n  {C('ERR')}✗ Ollama no está instalado.{C_RESET}")
+        print(f"  {C('INFO')}{_get_ollama_install_hint()}{C_RESET}")
+        print(f"  {C('DIM')}O ejecuta el instalador:{C_RESET}  ./install.sh\n")
+        input(f"  {C('DIM')}[Enter para salir]{C_RESET}")
+        return False
+
+    # 3. Arrancarlo en segundo plano
+    clear_screen(); print(get_banner())
+    print(f"\n  {C('WARN')}Ollama no está corriendo. Arrancando en segundo plano…{C_RESET}\n")
+    try:
+        kwargs = dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if sys.platform == 'win32':
+            # Windows: sin consola nueva visible
+            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+        else:
+            kwargs['start_new_session'] = True
+        _ollama_proc = subprocess.Popen(['ollama', 'serve'], **kwargs)
+    except Exception as e:
+        print(f"  {C('ERR')}✗ No se pudo arrancar ollama serve: {e}{C_RESET}\n")
+        input(f"  {C('DIM')}[Enter]{C_RESET}")
+        return False
+
+    # 4. Esperar hasta que responda (máx 15s)
+    bar_width = 30
+    for i in range(30):
+        time.sleep(0.5)
+        filled = int(bar_width * (i + 1) / 30)
+        bar = "█" * filled + "░" * (bar_width - filled)
+        print(f"\r  {C('THINK')}[{bar}]{C_RESET} {C('DIM')}esperando ollama…{C_RESET}  ", end="", flush=True)
+        try:
+            client.list()
+            print(f"\n\n  {C('OK')}✓ Ollama listo.{C_RESET}\n")
+            return True
+        except Exception:
+            pass
+
+    print(f"\n\n  {C('ERR')}✗ Ollama no respondió. Intenta manualmente: ollama serve{C_RESET}\n")
+    input(f"  {C('DIM')}[Enter]{C_RESET}")
+    return False
+
+def stop_ollama_if_we_started():
+    """Si nosotros arrancamos ollama serve, lo detenemos al salir."""
+    global _ollama_proc
+    if _ollama_proc and _ollama_proc.poll() is None:
+        _ollama_proc.terminate()
+        _ollama_proc = None
+
 # ── ENTRY POINT ────────────────────────────────────────────────────────────────
 def main():
     if len(sys.argv) >= 3 and sys.argv[1].lower() == 'pull':
+        if not ensure_ollama_running(): return
         pull_model(sys.argv[2]); return
     if len(sys.argv) >= 2 and sys.argv[1].lower() == 'search':
         search_models(); return
 
-    if not session.model:
-        session.model = select_model() or ""
-        if not session.model: return
-        session.save_config()
-    else:
-        # Verificar que el modelo guardado sigue disponible
-        try:
-            available = [m.model for m in client.list().models]
-            if session.model not in available:
-                session.model = select_model() or ""
-                if not session.model: return
-                session.save_config()
-        except Exception:
+    if not ensure_ollama_running():
+        return
+
+    try:
+        if not session.model:
             session.model = select_model() or ""
             if not session.model: return
+            session.save_config()
+        else:
+            try:
+                available = [m.model for m in client.list().models]
+                if session.model not in available:
+                    session.model = select_model() or ""
+                    if not session.model: return
+                    session.save_config()
+            except Exception:
+                session.model = select_model() or ""
+                if not session.model: return
 
-    chat()
+        chat()
+    finally:
+        stop_ollama_if_we_started()
 
 if __name__ == "__main__":
     main()
