@@ -988,12 +988,12 @@ def get_system_prompt():
     tools_str = ", ".join(active_tool_names) if active_tool_names else "none"
     base = f"You are a Rainbow Technology Assistant. Active tools: {tools_str}. Always respond in the same language the user writes in."
     thinking = {
-        "OFF":   "Respond directly without any tags.",
-        "ON":    "You MAY use <thought>...</thought> to reason before responding.",
+        "OFF":   "Respond directly. Do not use <thought> tags.",
+        "ON":    "Always use <thought>...</thought> tags to show your reasoning BEFORE your response. Close </thought> before writing the answer.",
         "FORCE": (
-            "MANDATORY FORMAT for every reply:\n"
-            "<thought>\n[your reasoning here]\n</thought>\n[your response here]\n"
-            "You MUST always close </thought> before writing the response. Never put the response inside <thought>."
+            "MANDATORY: Every reply MUST follow this exact format:\n"
+            "<thought>\n[extensive reasoning]\n</thought>\n[response]\n"
+            "NEVER skip the <thought> block. NEVER put the final response inside <thought>. Always close </thought>."
         ),
     }[session.thinking_mode]
     skill_prompt = get_active_skill_prompt()
