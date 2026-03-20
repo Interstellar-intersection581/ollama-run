@@ -1,0 +1,23 @@
+<svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ff0000;stop-opacity:1" />
+      <stop offset="20%" style="stop-color:#ff7f00;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#ffff00;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#00ff00;stop-opacity:1" />
+      <stop offset="80%" style="stop-color:#0000ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b00ff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="200" fill="#0d1117" rx="10"/>
+  <text x="50%" y="45%" font-family="monospace" font-size="60" font-weight="bold" fill="url(#rainbow)" text-anchor="middle" dominant-baseline="middle">
+    RAINBOW
+  </text>
+  <text x="50%" y="75%" font-family="monospace" font-size="24" fill="#58a6ff" text-anchor="middle">
+    OLLAMA-RUN v4.2 [ORCHESTRATOR]
+  </text>
+  <rect x="50" y="160" width="700" height="2" fill="url(#rainbow)" opacity="0.5"/>
+  <text x="50" y="185" font-family="monospace" font-size="12" fill="#8b949e">
+    #xyz-rainbow | #rainbowtechnology.xyz | #i-love-you
+  </text>
+</svg>

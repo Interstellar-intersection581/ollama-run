@@ -2,7 +2,7 @@
 
 Un orquestador avanzado para **Ollama** con soporte nativo de **Tools (Function Calling)**, interfaz interactiva y visualización de pensamiento en tiempo real.
 
-![Rainbow Ollama-Run](banner.png)
+![Rainbow Ollama-Run](banner.svg)
 
 ## 🚀 Características
 - **Herramientas Integradas:** Búsqueda web (DuckDuckGo), Ejecución de Shell, Integración con Logseq y Estado del Sistema.
