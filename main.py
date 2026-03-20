@@ -551,15 +551,30 @@ def get_key():
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
         return ch
 
+def _viewport(idx, total, reserved_lines=7):
+    """Return (scroll_offset, page_size) so idx is always visible."""
+    rows = os.get_terminal_size().lines if hasattr(os, 'get_terminal_size') else 24
+    page = max(3, rows - reserved_lines)
+    offset = max(0, min(idx - page // 2, total - page))
+    return offset, page
+
 def interactive_menu(options, title, right_action=None, right_hint=None):
     idx = 0
     while True:
         clear_screen()
         print(get_banner())
         print(f"\n  {C('ACCENT')}{title}{C_RESET}\n")
-        for i, opt in enumerate(options):
-            if i == idx: print(f"  {C('SEL')}> {opt}{C_RESET}")
-            else:        print(f"    {opt}")
+        offset, page = _viewport(idx, len(options))
+        visible = options[offset:offset + page]
+        if offset > 0:
+            print(f"  {C('DIM')}  ↑ {offset} more above{C_RESET}")
+        for i, opt in enumerate(visible):
+            gi = i + offset
+            if gi == idx: print(f"  {C('SEL')}> {opt}{C_RESET}")
+            else:         print(f"    {opt}")
+        below = len(options) - offset - page
+        if below > 0:
+            print(f"  {C('DIM')}  ↓ {below} more below{C_RESET}")
         if right_hint:
             print(f"\n  {C('INFO')}[→] {right_hint}{C_RESET}")
         key = get_key()
@@ -588,9 +603,13 @@ def toggle_list_menu(title, items, state_dict, default_state=False, extra_top=No
         del_hint = f"  {C('ERR')}[Del] delete{C_RESET}" if show_del else ""
         print(f"\n  {C('ACCENT')}{title}{C_RESET}  {C('INFO')}[SPACE] toggle  [Enter] select  [ESC] exit{C_RESET}{del_hint}\n")
 
-        for i, item in enumerate(all_options):
-            is_extra = i < n_extra
-            selected = (i == idx)
+        offset, page = _viewport(idx, len(all_options))
+        if offset > 0:
+            print(f"  {C('DIM')}  ↑ {offset} more above{C_RESET}")
+        for i, item in enumerate(all_options[offset:offset + page]):
+            gi = i + offset
+            is_extra = gi < n_extra
+            selected = (gi == idx)
             marker = f"  {C('SEL')}>{C_RESET}" if selected else "   "
 
             if is_extra:
@@ -603,6 +622,9 @@ def toggle_list_menu(title, items, state_dict, default_state=False, extra_top=No
                 status_color = C('OK') if enabled else C('ERR')
                 status_text  = " ON " if enabled else "OFF"
                 print(f"{marker} [{status_color}{status_text}{C_RESET}]  {C('RESP')}{name}{C_RESET}  {C('DIM')}{desc}{C_RESET}")
+        below = len(all_options) - offset - page
+        if below > 0:
+            print(f"  {C('DIM')}  ↓ {below} more below{C_RESET}")
 
         key = get_key()
         if key == '\x1b': break
