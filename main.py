@@ -48,7 +48,20 @@ STRINGS = {
         "downloading": "DOWNLOADING",
         "ready": "ready",
         "error_ollama": "Ollama is not installed or not running.",
-        "ctrl_q_hint": "Ctrl+C again or Ctrl+Q to quit.",
+        "ctrl_q_hint": "Ctrl+C again or Ctrl+C to quit.",
+        "commands": "Commands",
+        "more_above": "more above",
+        "more_below": "more below",
+        "download": "download",
+        "back": "back",
+        "usage": "Usage",
+        "unknown_cmd": "Unknown command",
+        "no_history": "No saved conversations.",
+        "load": "load",
+        "delete": "delete",
+        "delete_all": "Delete all",
+        "confirm_delete": "Delete this chat?",
+        "view_preview": "View preview",
     },
     "es": {
         "thinking": "Pensamiento",
@@ -70,7 +83,20 @@ STRINGS = {
         "downloading": "DESCARGANDO",
         "ready": "listo",
         "error_ollama": "Ollama no está instalado o no está iniciado.",
-        "ctrl_q_hint": "Ctrl+C de nuevo o Ctrl+Q para salir.",
+        "ctrl_q_hint": "Ctrl+C de nuevo para salir.",
+        "commands": "Comandos",
+        "more_above": "más arriba",
+        "more_below": "más abajo",
+        "download": "descargar",
+        "back": "volver",
+        "usage": "Uso",
+        "unknown_cmd": "Comando desconocido",
+        "no_history": "No hay conversaciones guardadas.",
+        "load": "cargar",
+        "delete": "borrar",
+        "delete_all": "Borrar todo",
+        "confirm_delete": "¿Borrar este chat?",
+        "view_preview": "Ver previsualización",
     }
 }
 
@@ -985,7 +1011,7 @@ def open_history():
         if not sessions:
             clear_screen()
             print(get_banner())
-            print(f"\n  {C('INFO')}No saved conversations.{C_RESET}\n")
+            print(f"\n  {C('INFO')}{T('no_history')}{C_RESET}\n")
             input(f"  {C('DIM')}[Enter]{C_RESET}")
             return None
 
@@ -993,17 +1019,17 @@ def open_history():
         while True:
             clear_screen()
             print(get_banner())
-            print(f"  {C('ACCENT')}HISTORY{C_RESET}  {C('INFO')}[Enter] load  [d] delete  [ESC] exit{C_RESET}\n")
+            print(f"  {C('ACCENT')}{T('history').upper()}{C_RESET}  {C('INFO')}[Enter] {T('load')}  [d] {T('delete')}  [ESC] {T('exit')}{C_RESET}\n")
             for i, s in enumerate(sessions):
                 marker = f"  {C('SEL')}>{C_RESET}" if i == idx else "   "
                 print(f"{marker} {C('RESP')}{s['date']}{C_RESET}  {C('INFO')}{s['model']}{C_RESET}")
                 print(f"     {C('DIM')}{s['preview']}{C_RESET}")
             # Opciones finales
-            extras = ["── Delete all ──", "Back"]
+            extras = [f"── {T('delete_all')} ──", T('back').capitalize()]
             for j, ex in enumerate(extras):
                 i = len(sessions) + j
                 marker = f"  {C('SEL')}>{C_RESET}" if i == idx else "   "
-                col = C('ERR') if 'Delete' in ex else C('DIM')
+                col = C('ERR') if T('delete').lower() in ex.lower() else C('DIM')
                 print(f"{marker} {col}{ex}{C_RESET}")
 
             total = len(sessions) + len(extras)
@@ -1074,14 +1100,14 @@ def interactive_menu(options, title, right_action=None, right_hint=None):
         offset, page = _viewport(idx, len(options))
         visible = options[offset:offset + page]
         if offset > 0:
-            print(f"  {C('DIM')}  ↑ {offset} more above{C_RESET}")
+            print(f"  {C('DIM')}  ↑ {offset} {T('more_above')}{C_RESET}")
         for i, opt in enumerate(visible):
             gi = i + offset
             if gi == idx: print(f"  {C('SEL')}> {opt}{C_RESET}")
             else:         print(f"    {opt}")
         below = len(options) - offset - page
         if below > 0:
-            print(f"  {C('DIM')}  ↓ {below} more below{C_RESET}")
+            print(f"  {C('DIM')}  ↓ {below} {T('more_below')}{C_RESET}")
         if right_hint:
             print(f"\n  {C('INFO')}[→] {right_hint}{C_RESET}")
         key = get_key()
@@ -1117,12 +1143,12 @@ def toggle_list_menu(title, items, state_dict, default_state=False, extra_top=No
             isinstance(item, dict) and (deletable_key is None or item.get(deletable_key, True))
             for item in all_options[n_extra:]
         )
-        del_hint = f"  {C('ERR')}[Del] delete{C_RESET}" if can_del else ""
-        print(f"\n  {C('ACCENT')}{title}{C_RESET}  {C('INFO')}[SPACE] toggle  [Enter] select  [ESC] exit{C_RESET}{del_hint}\n")
+        del_hint = f"  {C('ERR')}[Del] {T('delete')}{C_RESET}" if can_del else ""
+        print(f"\n  {C('ACCENT')}{title}{C_RESET}  {C('INFO')}[SPACE] toggle  [Enter] {T('select_model') if 'MODEL' in title else T('load')}  [ESC] {T('exit')}{C_RESET}{del_hint}\n")
 
         offset, page = _viewport(idx, len(all_options))
         if offset > 0:
-            print(f"  {C('DIM')}  ↑ {offset} more above{C_RESET}")
+            print(f"  {C('DIM')}  ↑ {offset} {T('more_above')}{C_RESET}")
         for i, item in enumerate(all_options[offset:offset + page]):
             gi = i + offset
             is_extra = gi < n_extra
@@ -1131,7 +1157,11 @@ def toggle_list_menu(title, items, state_dict, default_state=False, extra_top=No
 
             if is_extra:
                 name = item if isinstance(item, str) else item.get('name', str(item))
-                print(f"{marker} {C('ACCENT')}{name}{C_RESET}")
+                # Traducir opciones de búsqueda
+                display_name = name
+                if "[Search tools]" in name: display_name = f"[{T('search').capitalize()} {T('tools')}]"
+                if "[Search skills]" in name: display_name = f"[{T('search').capitalize()} {T('skills')}]"
+                print(f"{marker} {C('ACCENT')}{display_name}{C_RESET}")
             else:
                 name = item['name']
                 desc = item.get('description', '')
@@ -1143,7 +1173,7 @@ def toggle_list_menu(title, items, state_dict, default_state=False, extra_top=No
                 print(f"{marker} [{status_color}{status_text}{C_RESET}]  {C('RESP')}{name}{C_RESET}  {C('DIM')}{desc}{C_RESET}{lock_hint}")
         below = len(all_options) - offset - page
         if below > 0:
-            print(f"  {C('DIM')}  ↓ {below} more below{C_RESET}")
+            print(f"  {C('DIM')}  ↓ {below} {T('more_below')}{C_RESET}")
 
         key = get_key()
         if key == '\x11': return '\x11'
@@ -1194,14 +1224,14 @@ def search_result_menu(title, items):
     while True:
         clear_screen()
         print(get_banner())
-        print(f"\n  {C('ACCENT')}{title}{C_RESET}  {C('INFO')}[Enter] download  [ESC] back  [Ctrl+Q] exit{C_RESET}\n")
+        print(f"\n  {C('ACCENT')}{title}{C_RESET}  {C('INFO')}[Enter] {T('download')}  [ESC] {T('back')}  [Ctrl+Q] {T('exit')}{C_RESET}\n")
         
         # We reserve more lines because of the multiline description
         offset, page = _viewport(idx, len(items), reserved_lines=15)
         visible = items[offset:offset + page]
         
         if offset > 0:
-            print(f"  {C('DIM')}  ↑ {offset} more above{C_RESET}")
+            print(f"  {C('DIM')}  ↑ {offset} {T('more_above')}{C_RESET}")
             
         for i, item in enumerate(visible):
             gi = i + offset
@@ -1562,50 +1592,50 @@ def open_settings():
     # ed16048676de7958e429aff7174edcd4754c9abf044108febef29edec95ae3f5
     while True:
         opts = [
-            f"Model:    {session.model}",
-            f"Thinking: {session.thinking_mode}",
+            f"{T('model').capitalize()}:    {session.model or '---'}",
+            f"{T('thinking').capitalize()}: {session.thinking_mode}",
             f"Level:    {session.thinking_level}",
-            f"Theme:    {session.theme}",
-            "Tools…",
-            "Skills…",
-            "History…",
-            "Pull model…",
-            "Search models…",
-            "Chats…",
-            "Back",
+            f"{T('theme').capitalize()}:    {session.theme}",
+            f"{T('tools').capitalize()}…",
+            f"{T('skills').capitalize()}…",
+            f"{T('history').capitalize()}…",
+            f"{T('pull').capitalize()} {T('model')}…",
+            f"{T('search').capitalize()} {T('model')}s…",
+            f"{T('history').capitalize()} {T('settings')}…",
+            T('back').capitalize(),
         ]
-        opt = interactive_menu(opts, "SETTINGS")
+        opt = interactive_menu(opts, T('settings').upper())
         if opt == '\x11': return '\x11'
-        if not opt or "Back" in opt: break
-        if "Model"    in opt:
+        if not opt or T('back').capitalize() in opt: break
+        if T('model').capitalize() in opt:
             new = select_model()
             if new == '\x11': return '\x11'
             if new: session.model = new; session.save_config()
-        elif "Thinking" in opt:
-            mode = interactive_menu(["OFF","ON","FORCE"], "THINKING MODE")
+        elif T('thinking').capitalize() in opt:
+            mode = interactive_menu(["OFF","ON","FORCE"], T('thinking').upper())
             if mode == '\x11': return '\x11'
             if mode: session.thinking_mode = mode; session.save_config()
-        elif "Level"   in opt:
-            lv = interactive_menu(["Low","Medium","High"], "THINKING LEVEL")
+        elif "Level" in opt:
+            lv = interactive_menu(["Low","Medium","High"], T('thinking').upper())
             if lv == '\x11': return '\x11'
             if lv: session.thinking_level = lv; session.save_config()
-        elif "Theme"   in opt:
-            th = interactive_menu(list(THEMES.keys()), "THEME")
+        elif T('theme').capitalize() in opt:
+            th = interactive_menu(list(THEMES.keys()), T('theme').upper())
             if th == '\x11': return '\x11'
             if th: session.theme = th; session.save_config()
-        elif opt == "Tools…":
+        elif T('tools').capitalize() in opt:
             if open_tools() == '\x11': return '\x11'
-        elif opt == "Skills…":
+        elif T('skills').capitalize() in opt:
             if open_skills() == '\x11': return '\x11'
-        elif opt == "History…":
+        elif T('history').capitalize() in opt:
             if open_history() == '\x11': return '\x11'
-        elif "Pull"    in opt:
+        elif T('pull').capitalize() in opt:
             clear_screen(); print(get_banner())
-            name = input(f"\n  {C('INFO')}Model name:{C_RESET} ").strip()
+            name = input(f"\n  {C('INFO')}{T('model').capitalize()} {T('name')}:{C_RESET} ").strip()
             if name: pull_model(name)
-        elif "Search" in opt:
+        elif T('search').capitalize() in opt:
             if search_models() == '\x11': return '\x11'
-        elif "Chats"   in opt:
+        elif T('history').capitalize() in opt:
             if open_history_settings() == '\x11': return '\x11'
 
 def open_history_settings():
@@ -1618,20 +1648,20 @@ def open_history_settings():
             input(f"  {C('DIM')}[Enter]{C_RESET}"); return
 
         opts = [f"{s['date']}  {s['model']}  {s['preview']}" for s in sessions_list]
-        opts += ["── Delete all ──", "Back"]
-        choice = interactive_menu(opts, "CHATS  [Enter=open/delete]")
+        opts += [f"── {T('delete_all')} ──", T('back').capitalize()]
+        choice = interactive_menu(opts, f"{T('history').upper()}  [Enter={T('load')}/{T('delete')}]")
         if choice == '\x11': return '\x11'
-        if not choice or "Back" in choice: break
-        if "Delete all" in choice:
+        if not choice or T('back').capitalize() in choice: break
+        if T('delete_all') in choice:
             shutil.rmtree(SESSIONS_DIR); os.makedirs(SESSIONS_DIR, exist_ok=True)
             break
         # Find session and offer to delete
         for s in sessions_list:
             label = f"{s['date']}  {s['model']}  {s['preview']}"
             if choice == label:
-                action = interactive_menu(["View preview", "Delete this chat", "Back"], f"CHAT: {s['date']}")
+                action = interactive_menu([T('view_preview'), T('delete').capitalize(), T('back').capitalize()], f"{T('model').upper()}: {s['model']}")
                 if action == '\x11': return '\x11'
-                if action == "Delete this chat":
+                if action == T('delete').capitalize():
                     os.remove(s['path'])
                 break
 
@@ -1748,7 +1778,7 @@ def print_status():
     vision_str = f"  {C('OK')}👁 {T('vision')}{C_RESET}" if is_vision_model(session.model) else ""
     print(f"  {C('INFO')}{model_display}  {T('thinking')}:{session.thinking_mode}  {T('tools')}:{active_t}/{len(session.tools_enabled)}{skills_str}  {T('theme')}:{session.theme}{vision_str}{C_RESET}")
     img_hint = f" /img <path|url>" if is_vision_model(session.model) else ""
-    print(f"  {C('DIM')}Commands: /exit /settings /model /tools /skills /search /pull /history{img_hint}{C_RESET}\n")
+    print(f"  {C('DIM')}{T('commands')}: /exit /settings /model /tools /skills /search /pull /history{img_hint}{C_RESET}\n")
 
 # ── CHAT ───────────────────────────────────────────────────────────────────────
 # ── VISION ────────────────────────────────────────────────────────────────────
@@ -1907,20 +1937,20 @@ def chat(preloaded_msgs=None):
                 elif cmd in ('/pull', '/p'):
                     name = inp[len(cmd):].strip()
                     if name: pull_model(name)
-                    else: print(f"  {C('WARN')}Usage: {cmd} <model>")
+                    else: print(f"  {C('WARN')}{T('usage')}: {cmd} <model>")
                     continue
                 elif cmd in ('/history', '/h'):
                     loaded = open_history()
                     if loaded == '\x11': break
                     if loaded:
                         msgs = loaded
-                        print(f"\n  {C('OK')}✓ Conversation loaded ({len([m for m in msgs if m['role']=='user'])} messages){C_RESET}\n")
+                        print(f"\n  {C('OK')}✓ {T('response')} {T('load').lower()}ed ({len([m for m in msgs if m['role']=='user'])} {T('history')})\n")
                     clear_screen(); print(get_banner()); print_status(); continue
                 elif cmd in ('/img', '/i'):
                     # Fallthrough to image parsing logic below but as a known command
                     pass
                 else:
-                    print(f"  {C('ERR')}Unknown command: {cmd}{C_RESET}")
+                    print(f"  {C('ERR')}{T('unknown_cmd')}: {cmd}{C_RESET}")
                     continue
 
             # ── Image ──
