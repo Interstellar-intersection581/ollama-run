@@ -1738,29 +1738,26 @@ def stream_response(response_iter, show_thinking=True):
     thought_shown = False
     response_shown = False
     
-    # Calculate box width
     import shutil
-    term_w = min(shutil.get_terminal_size().columns - 4, 100)
+    term_w = min(shutil.get_terminal_size().columns - 6, 90)
 
     def _ensure_thinking_header():
         nonlocal thought_shown
         if not thought_shown and show_thinking:
             title = f" {T('thinking')} "
-            header = f"  {C('THINK_L')}┌─{title}{'─' * (term_w - len(title) - 2)}┐{C_RESET}"
+            header = f"  {C('THINK_L')}┌─{title}{'─' * (term_w - len(title))}┐{C_RESET}"
             print(f"\n{header}\n  {C('THINK_L')}│{C_RESET} {C('THINK')}", end="", flush=True)
             thought_shown = True
 
     def _ensure_response_header():
         nonlocal response_shown
         if not response_shown:
+            title = f" {T('response')} "
             if thought_shown:
-                # Close thinking box and transition
-                title = f" {T('response')} "
-                sep = f"  {C('RESP')}├─{title}{'─' * (term_w - len(title) - 2)}┤{C_RESET}"
+                sep = f"  {C('RESP')}├─{title}{'─' * (term_w - len(title))}┤{C_RESET}"
                 print(f"\n{sep}\n  {C('RESP')}│{C_RESET} ", end="", flush=True)
             else:
-                title = f" {T('response')} "
-                header = f"  {C('RESP')}┌─{title}{'─' * (term_w - len(title) - 2)}┐{C_RESET}"
+                header = f"  {C('RESP')}┌─{title}{'─' * (term_w - len(title))}┐{C_RESET}"
                 print(f"\n{header}\n  {C('RESP')}│{C_RESET} ", end="", flush=True)
             response_shown = True
 
@@ -1770,20 +1767,18 @@ def stream_response(response_iter, show_thinking=True):
 
         if thinking_piece and show_thinking:
             _ensure_thinking_header()
-            # Handle newlines in thinking to maintain left border
             processed = thinking_piece.replace('\n', f"\n  {C('THINK_L')}│{C_RESET} {C('THINK')}")
             print(f"{C('THINK')}{processed}{C_RESET}", end="", flush=True)
 
         if content_piece:
             _ensure_response_header()
-            # Handle newlines in content to maintain left border
             processed = content_piece.replace('\n', f"\n  {C('RESP')}│{C_RESET} ")
             print(f"{C('RESP')}{processed}{C_RESET}", end="", flush=True)
             full_text += content_piece
 
     if response_shown or thought_shown:
         color = C('RESP') if response_shown else C('THINK_L')
-        footer = f"  {color}└{'─' * (term_w)}┘{C_RESET}"
+        footer = f"  {color}└{'─' * (term_w + 2)}┘{C_RESET}"
         print(f"\n{footer}\n")
     return full_text
 
@@ -1903,18 +1898,17 @@ def chat(preloaded_msgs=None):
                     new[2] = new[2] & ~termios.IXON
                     termios.tcsetattr(fd, termios.TCSADRAIN, new)
                 
-                # User box header
+                # User box header (clean line)
                 import shutil
-                term_w = min(shutil.get_terminal_size().columns - 4, 100)
-                title = " User "
-                print(f"  {C('ACCENT')}┌─{title}{'─' * (term_w - len(title) - 2)}┐{C_RESET}")
+                term_w = min(shutil.get_terminal_size().columns - 6, 90)
+                print(f"  {C('ACCENT')}┌{'─' * (term_w + 2)}┐{C_RESET}")
                 
                 # Input prompt with left border
                 prompt = f"  {C('ACCENT')}│{C_RESET} {C('ACCENT')}[XYZ]{C_RESET} {C('DIM')}>{C_RESET} "
                 inp = input(prompt).strip()
                 
                 # User box footer
-                print(f"  {C('ACCENT')}└{'─' * term_w}┘{C_RESET}")
+                print(f"  {C('ACCENT')}└{'─' * (term_w + 2)}┘{C_RESET}")
                 
                 if os.name != 'nt':
                     termios.tcsetattr(fd, termios.TCSADRAIN, old)
