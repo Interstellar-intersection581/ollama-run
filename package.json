@@ -1,0 +1,23 @@
+{
+  "name": "ollama-run",
+  "version": "4.9.1",
+  "description": "Advanced Ollama orchestrator with tools and skills",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xyz-rainbow/ollama-run.git"
+  },
+  "bin": {
+    "ollama-run": "main.py"
+  },
+  "scripts": {
+    "postinstall": "pip install -e ."
+  },
+  "keywords": [
+    "ollama",
+    "ai",
+    "orchestrator",
+    "terminal"
+  ],
+  "author": "Rainbow Technology",
+  "license": "Personal use only"
+}

@@ -98,7 +98,13 @@ cd ollama-run
 
 ---
 
-### Manual install / Instalación manual
+### NPM (Short URL)
+
+```bash
+npm install -g xyz-rainbow/ollama-run
+```
+
+---
 
 ```bash
 pip install ollama duckduckgo-search psutil requests
