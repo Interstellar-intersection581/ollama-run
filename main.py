@@ -1359,8 +1359,9 @@ def print_status():
     active_t = sum(1 for v in session.tools_enabled.values() if v)
     active_s = sum(1 for v in session.skills_enabled.values() if v)
     skills_str = f"  {C('ACCENT')}{T('skills')}:{active_s}{C_RESET}" if active_s else ""
+    model_display = session.model if session.model else f"{C('ERR')}No model selected{C_RESET}"
     vision_str = f"  {C('OK')}👁 {T('vision')}{C_RESET}" if is_vision_model(session.model) else ""
-    print(f"  {C('INFO')}{session.model}  {T('thinking')}:{session.thinking_mode}  {T('tools')}:{active_t}/{len(session.tools_enabled)}{skills_str}  {T('theme')}:{session.theme}{vision_str}{C_RESET}")
+    print(f"  {C('INFO')}{model_display}  {T('thinking')}:{session.thinking_mode}  {T('tools')}:{active_t}/{len(session.tools_enabled)}{skills_str}  {T('theme')}:{session.theme}{vision_str}{C_RESET}")
     img_hint = f" /img <path|url>" if is_vision_model(session.model) else ""
     print(f"  {C('DIM')}Commands: /exit /settings /model /tools /skills /search /pull <m> /history{img_hint}{C_RESET}\n")
 
@@ -1371,6 +1372,7 @@ VISION_KEYWORDS = ['llava', 'bakllava', 'moondream', 'vision', 'minicpm-v',
                    'pixtral', 'idefics', 'internvl', 'deepseek-vl']
 
 def is_vision_model(model_name):
+    if not model_name: return False
     name = model_name.lower()
     return any(k in name for k in VISION_KEYWORDS)
 
@@ -1677,22 +1679,16 @@ def main():
     if not ensure_ollama_running():
         return
 
+    # Check if we have models installed and if the current model is valid
     try:
-        if not session.model:
-            session.model = select_model() or ""
-            if not session.model: return
-            session.save_config()
-        else:
-            try:
-                available = [m.model for m in client.list().models]
-                if session.model not in available:
-                    session.model = select_model() or ""
-                    if not session.model: return
-                    session.save_config()
-            except Exception:
-                session.model = select_model() or ""
-                if not session.model: return
+        models_list = client.list().models
+        available = [m.model for m in models_list] if models_list else []
+        if session.model and session.model not in available:
+            session.model = "" # Reset if model is missing from system
+    except Exception:
+        pass
 
+    try:
         chat()
     finally:
         stop_ollama_if_we_started()
