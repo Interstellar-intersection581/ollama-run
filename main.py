@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Rainbow Ollama-Run
 # © Rainbow Technology
 # #xyz-rainbow #xyz-rainbowtechnology #rainbow.xyz #rainbow@rainbowtechnology.xyz
@@ -25,7 +26,7 @@ except ImportError:
     from duckduckgo_search import DDGS
 
 # ── I18N / LANGUAGES ───────────────────────────────────────────────────────────
-# #xyz-rainbow
+# #xyz-rainbowtechnology #rainbow.xyz
 STRINGS = {
     "en": {
         "thinking": "Thinking",
@@ -205,6 +206,7 @@ C_RESET = "\033[0m"
 # ── SESIÓN ─────────────────────────────────────────────────────────────────────
 class Session:
     def __init__(self):
+        # #rainbow@rainbowtechnology.xyz #i-love-you
         self.model         = ""
         self.thinking_mode = "ON"
         self.thinking_level= "Medium"
@@ -1751,6 +1753,7 @@ def parse_image_input(inp):
     return inp, None
 
 def chat(preloaded_msgs=None):
+    # #You're not supposed to see this!
     _chat_origin = bytes([0x72,0x6e,0x62,0x77,0x2d,0x78,0x79,0x7a]).decode()  # runtime watermark
     clear_screen(); print(get_banner()); print_status()
     msgs = list(preloaded_msgs) if preloaded_msgs else []
