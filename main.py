@@ -448,6 +448,74 @@ def get_active_skill_prompt():
     parts = [f"[SKILL: {s['name']}] {s['prompt']}" for s in active]
     return "\n\n" + "\n\n".join(parts)
 
+# ── ANIMATION ──────────────────────────────────────────────────────────────────
+class Animation:
+    @staticmethod
+    def hide_cursor():
+        sys.stdout.write("\033[?25l")
+        sys.stdout.flush()
+
+    @staticmethod
+    def show_cursor():
+        sys.stdout.write("\033[?25h")
+        sys.stdout.flush()
+
+    @staticmethod
+    def clear_screen():
+        sys.stdout.write("\033[2J\033[H")
+        sys.stdout.flush()
+
+    @staticmethod
+    def draw_frame(screen, width, height, padding=2):
+        v = "│"
+        tl, tr, bl, br = "╭", "╮", "╰", "╯"
+        h = "─"
+        pw = width - padding * 2 - 2
+        row = tl + h * pw + tr
+        for x in range(padding, width - padding):
+            if 0 <= padding < height and 0 <= x < width:
+                screen[padding][x] = row[x - padding] if x - padding < len(row) else " "
+        row = bl + h * pw + br
+        for x in range(padding, width - padding):
+            if 0 <= height - padding - 1 < height and 0 <= x < width:
+                screen[height - padding - 1][x] = row[x - padding] if x - padding < len(row) else " "
+        for y in range(padding + 1, height - padding - 1):
+            if 0 <= y < height:
+                screen[y][padding] = v
+                screen[y][width - padding - 1] = v
+
+    @classmethod
+    def play(cls):
+        cls.hide_cursor()
+        cls.clear_screen()
+        width = min(shutil.get_terminal_size().columns, 100)
+        height = min(10, shutil.get_terminal_size().lines)
+        center_x = width // 2
+        center_y = height // 2
+        letters = [" X ", " ∆ ", " Z "]
+        frames = 30 # Slightly faster for better UX
+        for frame in range(frames):
+            out = "\033[H"
+            screen = [[" " for _ in range(width)] for _ in range(height)]
+            phase = frame / frames
+            if phase < 0.7:
+                letters_str = f" {letters[0]}{letters[1]}{letters[2]} "
+                start_x = int(center_x - len(letters_str) // 2)
+                for i, c in enumerate(letters_str):
+                    x = start_x + i
+                    if 0 <= x < width and 0 <= center_y < height:
+                        screen[center_y][x] = c
+            else:
+                cls.draw_frame(screen, width, height)
+            for row in screen:
+                out += "".join(row) + "\n"
+            sys.stdout.write(out)
+            sys.stdout.flush()
+            import time
+            time.sleep(0.03)
+        cls.clear_screen()
+        cls.show_cursor()
+
 # ── UTILIDADES ─────────────────────────────────────────────────────────────────
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -1676,6 +1744,8 @@ def main():
     if len(sys.argv) >= 2 and sys.argv[1].lower() == 'search':
         search_models(); return
 
+    Animation.play()
+
     if not ensure_ollama_running():
         return
 
@@ -1691,6 +1761,7 @@ def main():
     try:
         chat()
     finally:
+        Animation.play()
         stop_ollama_if_we_started()
         try:
             import readline as _rl
