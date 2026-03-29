@@ -1059,7 +1059,11 @@ def get_key():
         import select
         fd = sys.stdin.fileno()
         old = termios.tcgetattr(fd)
+        new = termios.tcgetattr(fd)
+        # Disable IXON to capture Ctrl+Q (\x11)
+        new[2] = new[2] & ~termios.IXON
         try:
+            termios.tcsetattr(fd, termios.TCSADRAIN, new)
             tty.setraw(fd)
             ch = os.read(fd, 1).decode('utf-8', errors='replace')
             if ch == '\x1b':
@@ -1714,7 +1718,7 @@ def print_status():
     vision_str = f"  {C('OK')}👁 {T('vision')}{C_RESET}" if is_vision_model(session.model) else ""
     print(f"  {C('INFO')}{model_display}  {T('thinking')}:{session.thinking_mode}  {T('tools')}:{active_t}/{len(session.tools_enabled)}{skills_str}  {T('theme')}:{session.theme}{vision_str}{C_RESET}")
     img_hint = f" /img <path|url>" if is_vision_model(session.model) else ""
-    print(f"  {C('DIM')}Commands: /exit(/e) /settings(/st) /model(/m) /tools(/t) /skills(/sk) /search(/sr) /pull(/p) /history(/h){img_hint}{C_RESET}\n")
+    print(f"  {C('DIM')}Commands: /exit /settings /model /tools /skills /search /pull /history{img_hint}{C_RESET}\n")
 
 # ── CHAT ───────────────────────────────────────────────────────────────────────
 # ── VISION ────────────────────────────────────────────────────────────────────
@@ -1790,6 +1794,13 @@ def parse_image_input(inp):
 
     return inp, None
 
+def readline_input(prompt):
+    """Wrapper for input() that checks for Ctrl+Q using get_key logic."""
+    # We do a quick non-blocking check if Ctrl+Q is already in buffer
+    # But the most reliable way is to let input() handle it if IXON is disabled.
+    # However, some Python versions/readline builds might still eat it.
+    return input(prompt)
+
 def chat(preloaded_msgs=None):
     # #You're not supposed to see this!
     _chat_origin = bytes([0x72,0x6e,0x62,0x77,0x2d,0x78,0x79,0x7a]).decode()  # runtime watermark
@@ -1805,10 +1816,33 @@ def chat(preloaded_msgs=None):
             if not msgs or msgs[0]['role'] != 'system': msgs.insert(0, sys_msg)
             else: msgs[0] = sys_msg
 
-            inp = input(f"\n  {C('ACCENT')}[XYZ]{C_RESET} {C('DIM')}>{C_RESET} ").strip()
+            try:
+                # Disable IXON temporarily for the main input too
+                if os.name != 'nt':
+                    fd = sys.stdin.fileno()
+                    old = termios.tcgetattr(fd)
+                    new = termios.tcgetattr(fd)
+                    new[2] = new[2] & ~termios.IXON
+                    termios.tcsetattr(fd, termios.TCSADRAIN, new)
+                
+                inp = input(f"\n  {C('ACCENT')}[XYZ]{C_RESET} {C('DIM')}>{C_RESET} ").strip()
+                
+                if os.name != 'nt':
+                    termios.tcsetattr(fd, termios.TCSADRAIN, old)
+            except EOFError:
+                break
+            except KeyboardInterrupt:
+                import time
+                now = time.time()
+                if now - _last_ctrl_c < 2.0:
+                    break
+                _last_ctrl_c = now
+                print(f"\n  {C('DIM')}{T('ctrl_q_hint')}{C_RESET}")
+                continue
+
             if not inp: continue
 
-            # Ctrl+Q → exit immediately
+            # Ctrl+Q → exit immediately (if captured by some terminals as string)
             if inp == '\x11':
                 break
 
