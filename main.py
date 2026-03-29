@@ -157,10 +157,6 @@ try:
 except ImportError:
     pass
 
-LOGSEQ_PATH = os.path.expanduser("~/Documents/Logseq/pages")
-if os.path.exists("/media/cloud-xyz/X/[Graph]/pages"):
-    LOGSEQ_PATH = "/media/cloud-xyz/X/[Graph]/pages"
-
 client = Client()
 
 # ── COLORES POR TEMA ───────────────────────────────────────────────────────────
@@ -215,7 +211,6 @@ class Session:
         self.tools_enabled = {
             'web_search':        True,
             'execute_shell':     True,
-            'logseq_io':         True,
             'get_system_status': True,
             'describe_image':    True,
             'ocr_image':         True,
@@ -262,7 +257,6 @@ def C(key): return session.c.get(key, "")
 DEFAULT_TOOLS = [
     {'type':'function','function':{'name':'web_search','description':'Web search via DuckDuckGo.','parameters':{'type':'object','properties':{'query':{'type':'string'}},'required':['query']}}},
     {'type':'function','function':{'name':'execute_shell','description':'Execute Bash commands.','parameters':{'type':'object','properties':{'command':{'type':'string'}},'required':['command']}}},
-    {'type':'function','function':{'name':'logseq_io','description':'Read/write Logseq pages.','parameters':{'type':'object','properties':{'action':{'type':'string','enum':['read','write','append']},'page_name':{'type':'string'},'content':{'type':'string'}},'required':['action','page_name']}}},
     {'type':'function','function':{'name':'get_system_status','description':'CPU, RAM, disk and process info.','parameters':{'type':'object','properties':{}}}},
     {'type':'function','function':{'name':'describe_image','description':'Describe image content using a vision model.','parameters':{'type':'object','properties':{'image_path':{'type':'string'},'question':{'type':'string'}},'required':['image_path']}}},
     {'type':'function','function':{'name':'ocr_image','description':'Extract text from image via OCR.','parameters':{'type':'object','properties':{'image_path':{'type':'string'},'lang':{'type':'string'}},'required':['image_path']}}},
@@ -828,25 +822,6 @@ def execute_shell(command):
         print_tool_result("shell", f"ERROR: {e}")
         return f"Error executing command: {e}"
 
-def logseq_io(action, page_name, content=None):
-    if not page_name.endswith(".md"): page_name += ".md"
-    path = os.path.join(LOGSEQ_PATH, page_name)
-    print_tool_msg(f"Logseq {action}: {page_name}…")
-    try:
-        if action == 'read':
-            with open(path, 'r', encoding='utf-8') as f: data = f.read()
-            print_tool_result("logseq", f"{len(data)} chars")
-            return data
-        elif action == 'write':
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, 'w', encoding='utf-8') as f: f.write(content or "")
-            print_tool_result("logseq", "written OK"); return "OK"
-        elif action == 'append':
-            with open(path, 'a', encoding='utf-8') as f: f.write(f"\n- {content}" if content else "")
-            print_tool_result("logseq", "appended OK"); return "OK"
-    except Exception as e:
-        print_tool_result("logseq", f"ERROR: {e}"); return str(e)
-
 def describe_image(image_path, question=None):
     """Usa el primer modelo vision disponible para describir una imagen."""
     print_tool_msg(f"Analyzing image: {image_path}…")
@@ -944,7 +919,6 @@ def ocr_image(image_path, lang=None):
 funcs = {
     'web_search': web_search,
     'execute_shell': execute_shell,
-    'logseq_io': logseq_io,
     'get_system_status': get_system_status,
     'describe_image': describe_image,
     'ocr_image': ocr_image,
@@ -1208,6 +1182,46 @@ def toggle_list_menu(title, items, state_dict, default_state=False, extra_top=No
                 state_dict[name] = not state_dict.get(name, default_state)
                 session.save_config()
 
+# ── SEARCH RESULT MENU ────────────────────────────────────────────────────────
+def search_result_menu(title, items):
+    if not items: return None
+    idx = 0
+    while True:
+        clear_screen()
+        print(get_banner())
+        print(f"\n  {C('ACCENT')}{title}{C_RESET}  {C('INFO')}[Enter] download  [ESC] back  [Ctrl+Q] exit{C_RESET}\n")
+        
+        # We reserve more lines because of the multiline description
+        offset, page = _viewport(idx, len(items), reserved_lines=15)
+        visible = items[offset:offset + page]
+        
+        if offset > 0:
+            print(f"  {C('DIM')}  ↑ {offset} more above{C_RESET}")
+            
+        for i, item in enumerate(visible):
+            gi = i + offset
+            selected = (gi == idx)
+            marker = f"  {C('SEL')}>{C_RESET}" if selected else "   "
+            print(f"{marker} {C('RESP')}{item['name']}{C_RESET}")
+            if selected:
+                desc = item.get('description', '')
+                import textwrap
+                wrapped = textwrap.wrap(desc, width=80)[:5]
+                for line in wrapped:
+                    print(f"      {C('DIM')}{line}{C_RESET}")
+                    
+        below = len(items) - offset - page
+        if below > 0:
+            print(f"  {C('DIM')}  ↓ {below} more below{C_RESET}")
+
+        key = get_key()
+        if key == '\x11': return '\x11'
+        elif key == '\x1b': return None
+        elif key == '\x1b[A': idx = (idx - 1) % len(items)
+        elif key == '\x1b[B': idx = (idx + 1) % len(items)
+        elif key in ['\r', '\n', '\r\n']:
+            return items[idx]
+
 # ── /TOOLS ────────────────────────────────────────────────────────────────────
 def open_tools():
     while True:
@@ -1224,6 +1238,7 @@ def open_tools():
             deletable_key='_deletable',
             on_delete=_delete_custom_tool,
         )
+        if result == '\x11': return '\x11'
         if result == "[Search tools]":
             clear_screen()
             print(get_banner())
@@ -1235,25 +1250,28 @@ def open_tools():
                 print(f"\n  {C('DIM')}Searching tools for '{q}'…{C_RESET}\n")
                 found = search_tools_online(q)
                 if found:
-                    existing = load_custom_tools()
-                    names = {t['function']['name'] for t in get_all_tools()}
-                    added = 0
-                    for ft in found:
-                        tname = ft['name']
+                    selected = search_result_menu("DOWNLOAD TOOL", found)
+                    if selected == '\x11': return '\x11'
+                    if selected:
+                        existing = load_custom_tools()
+                        names = {t['function']['name'] for t in get_all_tools()}
+                        tname = selected['name']
                         if tname not in names:
                             existing.append({'type': 'function', 'function': {
                                 'name': tname,
-                                'description': ft.get('description', ''),
+                                'description': selected.get('description', ''),
                                 'parameters': {'type': 'object', 'properties': {
-                                    k: {'type': 'string'} for k in ft.get('parameters', {})
+                                    k: {'type': 'string'} for k in selected.get('parameters', {})
                                 }, 'required': []},
                             }})
-                            added += 1
-                    save_custom_tools(existing)
-                    print(f"  {C('OK')}✓ {added} tools added.{C_RESET}\n")
+                            save_custom_tools(existing)
+                            print(f"\n  {C('OK')}✓ Tool '{tname}' added.{C_RESET}\n")
+                        else:
+                            print(f"\n  {C('WARN')}Tool '{tname}' already exists.{C_RESET}\n")
+                        input(f"  {C('DIM')}[Enter]{C_RESET}")
                 else:
                     print(f"  {C('WARN')}No tools found.{C_RESET}\n")
-                input(f"  {C('DIM')}[Enter]{C_RESET}")
+                    input(f"  {C('DIM')}[Enter]{C_RESET}")
         else:
             break
 
@@ -1275,6 +1293,7 @@ def open_skills():
             default_state=False,
             extra_top=["[Search skills]"],
         )
+        if result == '\x11': return '\x11'
         if result == "[Search skills]":
             clear_screen()
             print(get_banner())
@@ -1286,20 +1305,26 @@ def open_skills():
                 print(f"\n  {C('DIM')}Searching skills for '{q}'…{C_RESET}\n")
                 found = search_skills_online(q)
                 if found:
-                    # Guardar en catálogo extendido
-                    existing = []
-                    if os.path.exists(SKILLS_CATALOG):
-                        try:
-                            with open(SKILLS_CATALOG) as _f: existing = json.load(_f)
-                        except: pass
-                    names = {s['name'] for s in existing}
-                    added = [s for s in found if s['name'] not in names]
-                    existing += added
-                    with open(SKILLS_CATALOG, 'w') as f: json.dump(existing, f, indent=2)
-                    print(f"  {C('OK')}✓ {len(added)} skills added to catalog.{C_RESET}\n")
+                    selected = search_result_menu("DOWNLOAD SKILL", found)
+                    if selected == '\x11': return '\x11'
+                    if selected:
+                        # Guardar en catálogo extendido
+                        existing = []
+                        if os.path.exists(SKILLS_CATALOG):
+                            try:
+                                with open(SKILLS_CATALOG) as _f: existing = json.load(_f)
+                            except: pass
+                        names = {s['name'] for s in existing}
+                        if selected['name'] not in names:
+                            existing.append(selected)
+                            with open(SKILLS_CATALOG, 'w') as f: json.dump(existing, f, indent=2)
+                            print(f"\n  {C('OK')}✓ Skill '{selected['name']}' added to catalog.{C_RESET}\n")
+                        else:
+                            print(f"\n  {C('WARN')}Skill '{selected['name']}' already exists.{C_RESET}\n")
+                        input(f"  {C('DIM')}[Enter]{C_RESET}")
                 else:
                     print(f"  {C('WARN')}No skills found.{C_RESET}\n")
-                input(f"  {C('DIM')}[Enter]{C_RESET}")
+                    input(f"  {C('DIM')}[Enter]{C_RESET}")
         else:
             break
 
