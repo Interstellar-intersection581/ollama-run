@@ -134,8 +134,9 @@ else:
     import tty
 
 # Readline: Tab autocompletes commands starting with /
-COMMANDS = ['/exit', '/settings', '/model', '/tools', '/skills', '/search', '/history',
-            '/pull ', '/img ']
+COMMANDS = ['/exit', '/e', '/settings', '/st', '/model', '/m', '/tools', '/t',
+            '/skills', '/sk', '/search', '/sr', '/history', '/h',
+            '/pull ', '/p ', '/img ', '/i ']
 
 def _cmd_completer(text, state):
     if text.startswith('/'):
@@ -1676,7 +1677,7 @@ def print_status():
     vision_str = f"  {C('OK')}👁 {T('vision')}{C_RESET}" if is_vision_model(session.model) else ""
     print(f"  {C('INFO')}{model_display}  {T('thinking')}:{session.thinking_mode}  {T('tools')}:{active_t}/{len(session.tools_enabled)}{skills_str}  {T('theme')}:{session.theme}{vision_str}{C_RESET}")
     img_hint = f" /img <path|url>" if is_vision_model(session.model) else ""
-    print(f"  {C('DIM')}Commands: /exit /settings /model /tools /skills /search /pull <m> /history{img_hint}{C_RESET}\n")
+    print(f"  {C('DIM')}Commands: /exit(/e) /settings(/st) /model(/m) /tools(/t) /skills(/sk) /search(/sr) /pull(/p) /history(/h){img_hint}{C_RESET}\n")
 
 # ── CHAT ───────────────────────────────────────────────────────────────────────
 # ── VISION ────────────────────────────────────────────────────────────────────
@@ -1718,8 +1719,8 @@ def parse_image_input(inp):
     """
     IMG_EXTS_SET = set(IMG_EXTS)
 
-    # 1. Explicit command /img or /image
-    for prefix in ('/img ', '/image '):
+    # 1. Explicit command /img or /image or /i
+    for prefix in ('/img ', '/image ', '/i '):
         if inp.lower().startswith(prefix):
             rest = inp[len(prefix):].strip()
             # #xyz-rainbow
@@ -1775,33 +1776,44 @@ def chat(preloaded_msgs=None):
                 break
 
             # ── Commands ──
-            if inp.lower() == '/exit': break
-            if inp.lower() == '/settings':
-                open_settings(); show_thinking = session.thinking_mode != "OFF"
-                clear_screen(); print(get_banner()); print_status(); continue
-            if inp.lower() == '/tools':
-                open_tools()
-                clear_screen(); print(get_banner()); print_status(); continue
-            if inp.lower() == '/skills':
-                open_skills()
-                clear_screen(); print(get_banner()); print_status(); continue
-            if inp.lower() == '/model':
-                new = select_model()
-                if new: session.model = new; session.save_config()
-                clear_screen(); print(get_banner()); print_status(); continue
-            if inp.lower() == '/search':
-                search_models(); clear_screen(); print(get_banner()); print_status(); continue
-            if inp.lower().startswith('/pull '):
-                name = inp[6:].strip()
-                if name: pull_model(name)
-                else: print(f"  {C('WARN')}Usage: /pull <model>{C_RESET}")
-                continue
-            if inp.lower() == '/history':
-                loaded = open_history()
-                if loaded:
-                    msgs = loaded
-                    print(f"\n  {C('OK')}✓ Conversation loaded ({len([m for m in msgs if m['role']=='user'])} messages){C_RESET}\n")
-                clear_screen(); print(get_banner()); print_status(); continue
+            if inp.startswith('/'):
+                low_inp = inp.lower()
+                cmd_parts = low_inp.split()
+                cmd = cmd_parts[0]
+
+                if cmd in ('/exit', '/e'): break
+                elif cmd in ('/settings', '/st'):
+                    open_settings(); show_thinking = session.thinking_mode != "OFF"
+                    clear_screen(); print(get_banner()); print_status(); continue
+                elif cmd in ('/tools', '/t'):
+                    open_tools()
+                    clear_screen(); print(get_banner()); print_status(); continue
+                elif cmd in ('/skills', '/sk'):
+                    open_skills()
+                    clear_screen(); print(get_banner()); print_status(); continue
+                elif cmd in ('/model', '/m'):
+                    new = select_model()
+                    if new: session.model = new; session.save_config()
+                    clear_screen(); print(get_banner()); print_status(); continue
+                elif cmd in ('/search', '/sr'):
+                    search_models(); clear_screen(); print(get_banner()); print_status(); continue
+                elif cmd in ('/pull', '/p'):
+                    name = inp[len(cmd):].strip()
+                    if name: pull_model(name)
+                    else: print(f"  {C('WARN')}Usage: {cmd} <model>")
+                    continue
+                elif cmd in ('/history', '/h'):
+                    loaded = open_history()
+                    if loaded:
+                        msgs = loaded
+                        print(f"\n  {C('OK')}✓ Conversation loaded ({len([m for m in msgs if m['role']=='user'])} messages){C_RESET}\n")
+                    clear_screen(); print(get_banner()); print_status(); continue
+                elif cmd in ('/img', '/i'):
+                    # Fallthrough to image parsing logic below but as a known command
+                    pass
+                else:
+                    print(f"  {C('ERR')}Unknown command: {cmd}{C_RESET}")
+                    continue
 
             # ── Image ──
             text, img_path = parse_image_input(inp)
