@@ -1,4 +1,7 @@
 __pycache__/
 *.pyc
 .env
-
+ollama_run.egg-info/
+dist/
+build/
+node_modules/

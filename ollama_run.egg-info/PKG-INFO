@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: ollama-run
+Version: 4.8.0
+Requires-Dist: ollama
+Requires-Dist: psutil
+Requires-Dist: duckduckgo-search
+Requires-Dist: requests
+Dynamic: requires-dist

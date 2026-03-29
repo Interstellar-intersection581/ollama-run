@@ -1,0 +1,9 @@
+README.md
+main.py
+setup.py
+ollama_run.egg-info/PKG-INFO
+ollama_run.egg-info/SOURCES.txt
+ollama_run.egg-info/dependency_links.txt
+ollama_run.egg-info/entry_points.txt
+ollama_run.egg-info/requires.txt
+ollama_run.egg-info/top_level.txt

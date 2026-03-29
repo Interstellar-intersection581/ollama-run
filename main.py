@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
-# ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║  Rainbow Ollama-Run                                                         ║
-# ║  © Rainbow Technology — rainbowtechnology.xyz — #xyz-rainbow               ║
-# ║  Personal use only. Redistribution, forks and commercial use prohibited.   ║
-# ║  Unauthorized use will be reported and pursued legally.                     ║
-# ╚══════════════════════════════════════════════════════════════════════════════╝
+# Rainbow Ollama-Run
+# © Rainbow Technology
+# #xyz-rainbow #xyz-rainbowtechnology #rainbow.xyz #rainbow@rainbowtechnology.xyz
+# #i-love-you #You're not supposed to see this!
+# Personal use only. Redistribution, forks and commercial use prohibited.
+
 import json
 import subprocess
 import os
@@ -17,6 +16,7 @@ import shutil
 import base64
 import hashlib
 import mimetypes
+import locale
 from datetime import datetime
 from ollama import Client
 try:
@@ -24,27 +24,107 @@ try:
 except ImportError:
     from duckduckgo_search import DDGS
 
+# ── I18N / LANGUAGES ───────────────────────────────────────────────────────────
+# #xyz-rainbow
+STRINGS = {
+    "en": {
+        "thinking": "Thinking",
+        "response": "Response",
+        "tools": "tools",
+        "skills": "skills",
+        "theme": "theme",
+        "model": "model",
+        "status": "status",
+        "vision": "vision",
+        "exit": "exit",
+        "settings": "settings",
+        "history": "history",
+        "search": "search",
+        "pull": "pull",
+        "loading": "Loading...",
+        "no_models": "No models found. Use /search or /pull.",
+        "select_model": "SELECT MODEL",
+        "downloading": "DOWNLOADING",
+        "ready": "ready",
+        "error_ollama": "Ollama is not installed or not running.",
+        "ctrl_q_hint": "Ctrl+C again or Ctrl+Q to quit.",
+    },
+    "es": {
+        "thinking": "Pensamiento",
+        "response": "Respuesta",
+        "tools": "herramientas",
+        "skills": "skills",
+        "theme": "tema",
+        "model": "modelo",
+        "status": "estado",
+        "vision": "visión",
+        "exit": "salir",
+        "settings": "ajustes",
+        "history": "historial",
+        "search": "buscar",
+        "pull": "descargar",
+        "loading": "Cargando...",
+        "no_models": "No se encontraron modelos. Usa /search o /pull.",
+        "select_model": "SELECCIONAR MODELO",
+        "downloading": "DESCARGANDO",
+        "ready": "listo",
+        "error_ollama": "Ollama no está instalado o no está iniciado.",
+        "ctrl_q_hint": "Ctrl+C de nuevo o Ctrl+Q para salir.",
+    }
+}
+
+def get_system_lang():
+    """Get system language, fallback to English."""
+    try:
+        lang = locale.getdefaultlocale()[0]
+        if lang and lang.startswith('es'):
+            return "es"
+    except Exception:
+        pass
+    return "en"
+
+CURRENT_LANG = get_system_lang()
+
+def T(key):
+    """Translate key based on current language."""
+    return STRINGS.get(CURRENT_LANG, STRINGS["en"]).get(key, key)
+
 # ── AUTHORSHIP ─────────────────────────────────────────────────────────────────
-# Signature chain — do not remove. Used to assert ownership in DMCA/legal claims.
+# #xyz-rainbowtechnology #rainbow.xyz
 _AUTHOR          = "xyz-rainbow"
 _PROJECT         = "ollama-run"
 _ORG             = "Rainbow Technology"
 _DOMAIN          = "rainbowtechnology.xyz"
 _HANDLE          = "xyz-rainbowtechnology"
-# eHl6LXJhaW5ib3d8b2xsYW1hLXJ1bnxSYWluYm93IFRlY2hub2xvZ3l8cmFpbmJvd3RlY2hub2xvZ3kueHl6
 _SIG_B64         = b"eHl6LXJhaW5ib3d8b2xsYW1hLXJ1bnxSYWluYm93IFRlY2hub2xvZ3l8cmFpbmJvd3RlY2hub2xvZ3kueHl6"
-# PB4XULLSMFUW4YTPO56G63DMMFWWCLLSOVXHYUTBNFXGE33XEBKGKY3INZXWY33HPF6HEYLJNZRG653UMVRWQ3TPNRXWO6JOPB4XU===
-_SIG_B32         = b"PB4XULLSMFUW4YTPO56G63DMMFWWCLLSOVXHYUTBNFXGE33XEBKGKY3INZXWY33HPF6HEYLJNZRG653UMVRWQ3TPNRXWO6JOPB4XU==="
 _SIG_SHA256      = "ed16048676de7958e429aff7174edcd4754c9abf044108febef29edec95ae3f5"
-_SIG_HEX         = "78797a2d7261696e626f777c6f6c6c616d612d72756e7c5261696e626f7720546563686e6f6c6f67797c7261696e626f77746563686e6f6c6f67792e78797a"
-_BUILD_TAG       = "rnbw-ollama-4.9-20250320"
+_BUILD_TAG       = "rnbw-ollama-4.9.1-20250329"
 _LICENSE_URI     = "https://rainbowtechnology.xyz/license/ollama-run"
 
-def _verify_authorship():
-    """Decode and verify embedded authorship chain. For legal/DMCA use."""
-    decoded = base64.b64decode(_SIG_B64).decode()
-    expected_hash = hashlib.sha256(decoded.encode()).hexdigest()
-    return expected_hash == _SIG_SHA256 and _AUTHOR in decoded
+def get_base_dir():
+    """Calculate the data directory based on OS conventions."""
+    # #i-love-you
+    if os.name == 'nt':
+        # Windows: %APPDATA%\ollama-run
+        return os.path.join(os.environ.get('APPDATA', os.path.expanduser("~")), "ollama-run")
+    elif sys.platform == 'darwin':
+        # macOS: ~/Library/Application Support/ollama-run
+        return os.path.expanduser("~/Library/Application Support/ollama-run")
+    else:
+        # Linux: Respect XDG_CONFIG_HOME or fallback to ~/.config/ollama-run
+        xdg_config = os.environ.get('XDG_CONFIG_HOME', os.path.expanduser("~/.config"))
+        return os.path.join(xdg_config, "ollama-run")
+
+CORE_ID        = "rainbow-tech-v4.9.1-full"
+XYZ_DIR        = get_base_dir()
+SESSIONS_DIR   = os.path.join(XYZ_DIR, "sessions")
+CONFIG_FILE    = os.path.join(XYZ_DIR, "config.json")
+SKILLS_CATALOG = os.path.join(XYZ_DIR, "skills_catalog.json")
+HISTORY_FILE   = os.path.join(XYZ_DIR, "input_history")
+
+# Ensure base directories exist
+os.makedirs(SESSIONS_DIR, exist_ok=True)
+os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
 
 if os.name == 'nt':
     import msvcrt
@@ -62,7 +142,6 @@ def _cmd_completer(text, state):
         return matches[state] if state < len(matches) else None
     return None
 
-HISTORY_FILE = os.path.expanduser("~/.ollama-run/input_history")
 try:
     import readline
     readline.set_completer(_cmd_completer)
@@ -75,16 +154,6 @@ try:
     readline.set_history_length(500)
 except ImportError:
     pass
-
-CORE_ID        = "rainbow-tech-v4.9-full"                             # rnbw
-XYZ_DIR        = os.path.expanduser("~/.ollama-run")
-SESSIONS_DIR   = os.path.join(XYZ_DIR, "sessions")
-CONFIG_FILE    = os.path.join(XYZ_DIR, "config.json")
-SKILLS_CATALOG = os.path.join(XYZ_DIR, "skills_catalog.json")
-# integrity: 78797a2d7261696e626f77 | © Rainbow Technology
-_RUNTIME_TOKEN = base64.b64decode("cmFpbmJvd3RlY2hub2xvZ3kueHl6").decode()  # watermark
-os.makedirs(SESSIONS_DIR, exist_ok=True)
-os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
 
 LOGSEQ_PATH = os.path.expanduser("~/Documents/Logseq/pages")
 if os.path.exists("/media/cloud-xyz/X/[Graph]/pages"):
@@ -186,6 +255,7 @@ session = Session()
 def C(key): return session.c.get(key, "")
 
 # ── TOOLS DEFINITIONS ──────────────────────────────────────────────────────────
+# #xyz-rainbow
 DEFAULT_TOOLS = [
     {'type':'function','function':{'name':'web_search','description':'Web search via DuckDuckGo.','parameters':{'type':'object','properties':{'query':{'type':'string'}},'required':['query']}}},
     {'type':'function','function':{'name':'execute_shell','description':'Execute Bash commands.','parameters':{'type':'object','properties':{'command':{'type':'string'}},'required':['command']}}},
@@ -287,43 +357,44 @@ def search_tools_online(query):
         return []
 
 # ── SKILLS CATALOG ─────────────────────────────────────────────────────────────
+# #You're not supposed to see this!
 BUILTIN_SKILLS = [
     # ── Code & Dev ──────────────────────────────────────────────────────────────
-    {"name": "code_review",     "description": "Review code for bugs, style and improvements",       "prompt": "You are a senior code reviewer. Analyze the presented code for bugs, performance issues, readability and best practices. Be precise and constructive. Show fixed snippets when relevant."},
-    {"name": "refactor",        "description": "Refactor code for clarity and maintainability",      "prompt": "You are a refactoring expert. Improve the given code's structure, naming and readability without changing behavior. Explain each change."},
-    {"name": "debug",           "description": "Find and fix bugs step by step",                     "prompt": "You are an expert debugger. Analyze the code or error, identify the root cause step by step, and provide a clear fix with explanation."},
-    {"name": "test_writer",     "description": "Write unit and integration tests",                   "prompt": "You are a testing expert. Write comprehensive unit and integration tests for the given code. Use the project's existing test framework. Cover edge cases and failure paths."},
+    {"name": "code_review",     "description": "Review code for bugs, style and improvements",       "prompt": "You are a senior code reviewer. Analyze the presented code for bugs, performance issues, readability and best practices. Be precise and constructive. Show fixed snippets when relevant."}, 
+    {"name": "refactor",        "description": "Refactor code for clarity and maintainability",      "prompt": "You are a refactoring expert. Improve the given code's structure, naming and readability without changing behavior. Explain each change."}, 
+    {"name": "debug",           "description": "Find and fix bugs step by step",                     "prompt": "You are an expert debugger. Analyze the code or error, identify the root cause step by step, and provide a clear fix with explanation."}, 
+    {"name": "test_writer",     "description": "Write unit and integration tests",                   "prompt": "You are a testing expert. Write comprehensive unit and integration tests for the given code. Use the project's existing test framework. Cover edge cases and failure paths."}, 
     {"name": "doc_writer",      "description": "Generate technical documentation",                   "prompt": "You are a technical writer. Generate clear, complete documentation with examples in the requested format (README, docstring, wiki, JSDoc, etc)."},
-    {"name": "sql_expert",      "description": "Generate and optimize SQL queries",                  "prompt": "You are a database expert. Generate optimized SQL queries, explain execution plans and suggest indexes. Support PostgreSQL, MySQL and SQLite."},
-    {"name": "regex_builder",   "description": "Build and explain regular expressions",              "prompt": "You are a regex expert. Build the requested regex, explain each part and provide match/non-match examples."},
-    {"name": "git_helper",      "description": "Help with Git commands and workflows",               "prompt": "You are a Git expert. Provide exact commands, explain their effects and warn about destructive operations."},
-    {"name": "api_designer",    "description": "Design and document REST/GraphQL APIs",              "prompt": "You are an API architect. Design RESTful endpoints or GraphQL schemas following best practices, with request/response examples and auth considerations."},
-    {"name": "security_audit",  "description": "Audit code for vulnerabilities (OWASP)",             "prompt": "You are an application security expert (OWASP Top 10). Analyze code for injection, XSS, CSRF, auth issues and more. Classify by severity and suggest mitigations."},
-    {"name": "performance",     "description": "Profile and optimize code performance",              "prompt": "You are a performance engineer. Identify bottlenecks, suggest algorithmic improvements, caching strategies and profiling approaches for the given code."},
-    {"name": "architect",       "description": "System design and architecture decisions",           "prompt": "You are a senior software architect. Design scalable, maintainable systems. Discuss trade-offs, patterns (microservices, event-driven, CQRS) and draw ASCII diagrams when helpful."},
-    {"name": "devops",          "description": "CI/CD, Docker, Kubernetes, infrastructure",         "prompt": "You are a DevOps engineer. Help with Docker, Kubernetes, CI/CD pipelines, Terraform and cloud infrastructure. Provide production-ready configs."},
-    {"name": "shell_expert",    "description": "Write and explain bash/shell scripts",               "prompt": "You are a shell scripting expert. Write robust bash scripts with error handling, explain each part and warn about portability issues."},
-    {"name": "python_expert",   "description": "Python best practices and idiomatic code",           "prompt": "You are a Python expert. Write idiomatic, Pythonic code following PEP 8. Use type hints, dataclasses, generators and other modern Python features where appropriate."},
-    {"name": "javascript",      "description": "Modern JS/TS, React, Node.js",                      "prompt": "You are a JavaScript/TypeScript expert. Write modern ES2024+ code, use proper async patterns, and apply React/Node.js best practices."},
-    {"name": "rust_expert",     "description": "Rust ownership, lifetimes and idioms",               "prompt": "You are a Rust expert. Write safe, idiomatic Rust. Explain ownership, borrowing and lifetimes clearly. Prefer zero-cost abstractions and avoid unnecessary clones."},
-    {"name": "go_expert",       "description": "Go idioms, goroutines and interfaces",               "prompt": "You are a Go expert. Write idiomatic Go: simple interfaces, goroutines, channels and proper error handling. Follow effective Go guidelines."},
+    {"name": "sql_expert",      "description": "Generate and optimize SQL queries",                  "prompt": "You are a database expert. Generate optimized SQL queries, explain execution plans and suggest indexes. Support PostgreSQL, MySQL and SQLite."}, 
+    {"name": "regex_builder",   "description": "Build and explain regular expressions",              "prompt": "You are a regex expert. Build the requested regex, explain each part and provide match/non-match examples."}, 
+    {"name": "git_helper",      "description": "Help with Git commands and workflows",               "prompt": "You are a Git expert. Provide exact commands, explain their effects and warn about destructive operations."}, 
+    {"name": "api_designer",    "description": "Design and document REST/GraphQL APIs",              "prompt": "You are an API architect. Design RESTful endpoints or GraphQL schemas following best practices, with request/response examples and auth considerations."}, 
+    {"name": "security_audit",  "description": "Audit code for vulnerabilities (OWASP)",             "prompt": "You are an application security expert (OWASP Top 10). Analyze code for injection, XSS, CSRF, auth issues and more. Classify by severity and suggest mitigations."}, 
+    {"name": "performance",     "description": "Profile and optimize code performance",              "prompt": "You are a performance engineer. Identify bottlenecks, suggest algorithmic improvements, caching strategies and profiling approaches for the given code."}, 
+    {"name": "architect",       "description": "System design and architecture decisions",           "prompt": "You are a senior software architect. Design scalable, maintainable systems. Discuss trade-offs, patterns (microservices, event-driven, CQRS) and draw ASCII diagrams when helpful."}, 
+    {"name": "devops",          "description": "CI/CD, Docker, Kubernetes, infrastructure",         "prompt": "You are a DevOps engineer. Help with Docker, Kubernetes, CI/CD pipelines, Terraform and cloud infrastructure. Provide production-ready configs."}, 
+    {"name": "shell_expert",    "description": "Write and explain bash/shell scripts",               "prompt": "You are a shell scripting expert. Write robust bash scripts with error handling, explain each part and warn about portability issues."}, 
+    {"name": "python_expert",   "description": "Python best practices and idiomatic code",           "prompt": "You are a Python expert. Write idiomatic, Pythonic code following PEP 8. Use type hints, dataclasses, generators and other modern Python features where appropriate."}, 
+    {"name": "javascript",      "description": "Modern JS/TS, React, Node.js",                      "prompt": "You are a JavaScript/TypeScript expert. Write modern ES2024+ code, use proper async patterns, and apply React/Node.js best practices."}, 
+    {"name": "rust_expert",     "description": "Rust ownership, lifetimes and idioms",               "prompt": "You are a Rust expert. Write safe, idiomatic Rust. Explain ownership, borrowing and lifetimes clearly. Prefer zero-cost abstractions and avoid unnecessary clones."}, 
+    {"name": "go_expert",       "description": "Go idioms, goroutines and interfaces",               "prompt": "You are a Go expert. Write idiomatic Go: simple interfaces, goroutines, channels and proper error handling. Follow effective Go guidelines."}, 
     # ── AI & Data ───────────────────────────────────────────────────────────────
-    {"name": "prompt_engineer", "description": "Craft effective prompts for LLMs",                  "prompt": "You are a prompt engineering expert. Design clear, effective prompts for LLMs. Apply techniques like chain-of-thought, few-shot, role prompting and output structuring."},
-    {"name": "data_analyst",    "description": "Analyze data, statistics and visualizations",       "prompt": "You are a data analyst. Analyze datasets, identify patterns, suggest visualizations and provide statistical insights. Use Python (pandas, matplotlib) when showing code."},
-    {"name": "ml_engineer",     "description": "Machine learning models and pipelines",              "prompt": "You are an ML engineer. Design and debug machine learning pipelines, choose appropriate models, tune hyperparameters and explain evaluation metrics."},
+    {"name": "prompt_engineer", "description": "Craft effective prompts for LLMs",                  "prompt": "You are a prompt engineering expert. Design clear, effective prompts for LLMs. Apply techniques like chain-of-thought, few-shot, role prompting and output structuring."}, 
+    {"name": "data_analyst",    "description": "Analyze data, statistics and visualizations",       "prompt": "You are a data analyst. Analyze datasets, identify patterns, suggest visualizations and provide statistical insights. Use Python (pandas, matplotlib) when showing code."}, 
+    {"name": "ml_engineer",     "description": "Machine learning models and pipelines",              "prompt": "You are an ML engineer. Design and debug machine learning pipelines, choose appropriate models, tune hyperparameters and explain evaluation metrics."}, 
     # ── Writing & Communication ─────────────────────────────────────────────────
-    {"name": "translate",       "description": "Precise translation between languages",              "prompt": "You are a professional translator. Detect the source language automatically and translate with precision, preserving tone and context."},
-    {"name": "summarize",       "description": "Summarize long texts concisely",                    "prompt": "You are a summarization expert. Summarize the given text clearly and structurally, extracting key points without losing critical information."},
-    {"name": "copywriter",      "description": "Persuasive marketing and UX copy",                  "prompt": "You are a professional copywriter. Write clear, persuasive copy for landing pages, ads, emails or UX microcopy. Adapt tone to the brand voice."},
-    {"name": "email_writer",    "description": "Write professional emails and responses",           "prompt": "You are an expert at professional communication. Write concise, clear and appropriately-toned emails. Ask for missing context if needed."},
-    {"name": "interviewer",     "description": "Mock technical interview practice",                  "prompt": "You are a technical interviewer at a top tech company. Conduct a realistic mock interview for the requested role. Ask one question at a time, evaluate answers and give feedback."},
+    {"name": "translate",       "description": "Precise translation between languages",              "prompt": "You are a professional translator. Detect the source language automatically and translate with precision, preserving tone and context."}, 
+    {"name": "summarize",       "description": "Summarize long texts concisely",                    "prompt": "You are a summarization expert. Summarize the given text clearly and structurally, extracting key points without losing critical information."}, 
+    {"name": "copywriter",      "description": "Persuasive marketing and UX copy",                  "prompt": "You are a professional copywriter. Write clear, persuasive copy for landing pages, ads, emails or UX microcopy. Adapt tone to the brand voice."}, 
+    {"name": "email_writer",    "description": "Write professional emails and responses",           "prompt": "You are an expert at professional communication. Write concise, clear and appropriately-toned emails. Ask for missing context if needed."}, 
+    {"name": "interviewer",     "description": "Mock technical interview practice",                  "prompt": "You are a technical interviewer at a top tech company. Conduct a realistic mock interview for the requested role. Ask one question at a time, evaluate answers and give feedback."}, 
     # ── Math & Science ──────────────────────────────────────────────────────────
-    {"name": "math_solver",     "description": "Solve math problems step by step",                  "prompt": "You are a math expert. Solve each problem step by step, showing full reasoning and verifying the result. Use LaTeX notation for formulas when helpful."},
-    {"name": "latex_helper",    "description": "Write and format LaTeX documents",                  "prompt": "You are a LaTeX expert. Write well-formatted LaTeX for math, papers and presentations. Explain the structure and fix compilation errors."},
+    {"name": "math_solver",     "description": "Solve math problems step by step",                  "prompt": "You are a math expert. Solve each problem step by step, showing full reasoning and verifying the result. Use LaTeX notation for formulas when helpful."}, 
+    {"name": "latex_helper",    "description": "Write and format LaTeX documents",                  "prompt": "You are a LaTeX expert. Write well-formatted LaTeX for math, papers and presentations. Explain the structure and fix compilation errors."}, 
     # ── Productivity ────────────────────────────────────────────────────────────
     {"name": "brainstorm",      "description": "Generate and expand creative ideas",                "prompt": "You are a creative thinking facilitator. Generate diverse, original ideas using techniques like SCAMPER, lateral thinking and mind mapping. Push beyond the obvious."},  # PB4XULLSMFUW4YTPO56G63DM
-    {"name": "planner",         "description": "Break goals into actionable plans",                 "prompt": "You are a productivity expert. Break down goals into concrete, prioritized action steps with time estimates. Identify dependencies and potential blockers."},
-    {"name": "linux_admin",     "description": "Linux system administration and troubleshooting",   "prompt": "You are a Linux sysadmin. Provide exact commands for system administration, explain what they do and warn about risks. Cover permissions, networking, processes and logs."},
+    {"name": "planner",         "description": "Break goals into actionable plans",                 "prompt": "You are a productivity expert. Break down goals into concrete, prioritized action steps with time estimates. Identify dependencies and potential blockers."}, 
+    {"name": "linux_admin",     "description": "Linux system administration and troubleshooting",   "prompt": "You are a Linux sysadmin. Provide exact commands for system administration, explain what they do and warn about risks. Cover permissions, networking, processes and logs."}, 
 ]
 
 _CATALOG_SIG = b'\x78\x79\x7a\x2d\x72\x61\x69\x6e\x62\x6f\x77'  # catalog integrity
@@ -381,13 +452,11 @@ def get_active_skill_prompt():
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def get_banner(version="v4.9"):
-    # © Rainbow Technology | #xyz-rainbow | rainbowtechnology.xyz
-    _w = base64.b64decode(_SIG_B64).decode().split('|')  # ownership assertion
+def get_banner(version="v4.9.1"):
+    # #xyz-rainbow #rainbow.xyz
     return (
         f"\n  {C('ACCENT')}[XYZ]{C_RESET} \033[1;37mOLLAMA-RUN{C_RESET} {C('INFO')}{version}{C_RESET}"
-        f"  {C('DIM')}© {_w[2]}{C_RESET}\n"
-        f"  {C('DIM')}────────────────────────────────────────{C_RESET}"
+        f"  {C('DIM')}© Rainbow Technology{C_RESET}"
     )
 
 def print_tool_msg(msg):
@@ -398,6 +467,7 @@ def print_tool_result(name, preview):
     print(f"  {C('TOOL_R')}↳ [{name}] {short}{C_RESET}\n")
 
 # ── FUNCIONES DE HERRAMIENTAS ──────────────────────────────────────────────────
+# #xyz-rainbowtechnology
 def get_system_status():
     print_tool_msg("Retrieving system status…")
     data = {"time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "cpu": psutil.cpu_percent(), "ram_mb": psutil.virtual_memory().available // 10**6}
@@ -500,7 +570,7 @@ def ocr_image(image_path, lang=None):
     print_tool_msg(f"OCR: {image_path}…")
     lang = lang or "spa+eng"
     # Descargar si es URL
-    local_path = image_path.strip().strip("'\"")
+    local_path = image_path.strip().strip("'").strip('"')
     tmp_file = None
     try:
         if local_path.startswith('http://') or local_path.startswith('https://'):
@@ -540,9 +610,9 @@ def ocr_image(image_path, lang=None):
                     print_tool_result("ocr_image", text[:120] or "(no text found)")
                     return text.strip() or "(No text detected)"
 
-        result = ("OCR not available. Install tesseract:\n"
-                  "  Linux: sudo apt install tesseract-ocr tesseract-ocr-spa\n"
-                  "  macOS: brew install tesseract\n"
+        result = ("OCR not available. Install tesseract:\n" 
+                  "  Linux: sudo apt install tesseract-ocr tesseract-ocr-spa\n" 
+                  "  macOS: brew install tesseract\n" 
                   "  Python: pip install pytesseract pillow")
         print_tool_result("ocr_image", result)
         return result
@@ -665,7 +735,7 @@ def get_key():
         if ch == b'\xe0':
             ch = msvcrt.getch()
             mapping = {b'H': 'A', b'P': 'B', b'M': 'C', b'K': 'D'}
-            return f"\x1b[{mapping.get(ch, ' ')}"
+            return f"\x1b[{mapping.get(ch, ' ')}" 
         try: return ch.decode('utf-8')
         except: return ""
     else:
@@ -715,11 +785,11 @@ def interactive_menu(options, title, right_action=None, right_hint=None):
         if right_hint:
             print(f"\n  {C('INFO')}[→] {right_hint}{C_RESET}")
         key = get_key()
-        if   key == '\x1b[A':  idx = (idx - 1) % len(options)
+        if   key == '\x1b': return None
+        elif key == '\x1b[A':  idx = (idx - 1) % len(options)
         elif key == '\x1b[B':  idx = (idx + 1) % len(options)
         elif key in ['\r','\n','\r\n']: return options[idx]
         elif key == '\x1b[C' and right_action: right_action(idx)
-        elif key == '\x1b': return None
 
 # ── TOGGLE LIST (para /tools y /skills) ───────────────────────────────────────
 def toggle_list_menu(title, items, state_dict, default_state=False, extra_top=None,
@@ -915,16 +985,16 @@ def select_model():
     try:
         models = [m.model for m in client.list().models]
         if not models:
-            print(f"\n  {C('WARN')}No models found. Use /search or /pull.{C_RESET}")
+            print(f"\n  {C('WARN')}{T('no_models')}{C_RESET}")
             input(f"  {C('DIM')}[Enter]{C_RESET}"); return None
-        return interactive_menu(models, "SELECT MODEL")
+        return interactive_menu(models, T('select_model'))
     except Exception as e:
         print(f"\n  {C('ERR')}Error: {e}{C_RESET}"); return None
 
 def pull_model(model_name):
     clear_screen()
     print(get_banner())
-    print(f"\n  {C('ACCENT')}DOWNLOADING{C_RESET}  {C('INFO')}{model_name}{C_RESET}\n")
+    print(f"\n  {C('ACCENT')}{T('downloading')}{C_RESET}  {C('INFO')}{model_name}{C_RESET}\n")
     try:
         bar_width = 40
         cur_status = ""; cur_digest = ""
@@ -1256,13 +1326,13 @@ def stream_response(response_iter, show_thinking=True):
     def _ensure_thinking_header():
         nonlocal thought_shown
         if not thought_shown and show_thinking:
-            print(f"\n  {C('THINK_L')}── Thinking ────────────────────────────{C_RESET}\n  {C('THINK')}", end="", flush=True)
+            print(f"\n  {C('THINK_L')}── {T('thinking')} ────────────────────────────{C_RESET}\n  {C('THINK')}", end="", flush=True)
             thought_shown = True
 
     def _ensure_response_header():
         nonlocal response_shown
         if not response_shown:
-            print(f"\n  {C('RESP')}── Response ────────────────────────────{C_RESET}\n  ", end="", flush=True)
+            print(f"\n  {C('RESP')}── {T('response')} ────────────────────────────{C_RESET}\n  ", end="", flush=True)
             response_shown = True
 
     for chunk in response_iter:
@@ -1288,10 +1358,10 @@ def stream_response(response_iter, show_thinking=True):
 def print_status():
     active_t = sum(1 for v in session.tools_enabled.values() if v)
     active_s = sum(1 for v in session.skills_enabled.values() if v)
-    skills_str = f"  {C('ACCENT')}skills:{active_s}{C_RESET}" if active_s else ""
-    vision_str = f"  {C('OK')}👁 vision{C_RESET}" if is_vision_model(session.model) else ""
-    print(f"  {C('INFO')}{session.model}  thinking:{session.thinking_mode}  tools:{active_t}/{len(session.tools_enabled)}{skills_str}  theme:{session.theme}{vision_str}{C_RESET}")
-    img_hint = f" /img <ruta|url>" if is_vision_model(session.model) else ""
+    skills_str = f"  {C('ACCENT')}{T('skills')}:{active_s}{C_RESET}" if active_s else ""
+    vision_str = f"  {C('OK')}👁 {T('vision')}{C_RESET}" if is_vision_model(session.model) else ""
+    print(f"  {C('INFO')}{session.model}  {T('thinking')}:{session.thinking_mode}  {T('tools')}:{active_t}/{len(session.tools_enabled)}{skills_str}  {T('theme')}:{session.theme}{vision_str}{C_RESET}")
+    img_hint = f" /img <path|url>" if is_vision_model(session.model) else ""
     print(f"  {C('DIM')}Commands: /exit /settings /model /tools /skills /search /pull <m> /history{img_hint}{C_RESET}\n")
 
 # ── CHAT ───────────────────────────────────────────────────────────────────────
@@ -1305,17 +1375,17 @@ def is_vision_model(model_name):
     return any(k in name for k in VISION_KEYWORDS)
 
 def load_image_b64(path):
-    """Carga una imagen desde ruta o URL y devuelve base64."""
+    """Load an image from path or URL and return base64."""
     path = path.strip().strip('"').strip("'")
     # URL
     if path.startswith('http://') or path.startswith('https://'):
         resp = requests.get(path, timeout=15)
         resp.raise_for_status()
         return base64.b64encode(resp.content).decode()
-    # Ruta local — expandir ~ y variables
+    # Local path — expand ~ and variables
     path = os.path.expandvars(os.path.expanduser(path))
     if not os.path.exists(path):
-        raise FileNotFoundError(f"No se encontró: {path}")
+        raise FileNotFoundError(f"Not found: {path}")
     with open(path, 'rb') as f:
         return base64.b64encode(f.read()).decode()
 
@@ -1323,40 +1393,36 @@ IMG_EXTS = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif', '
 
 def parse_image_input(inp):
     """
-    Detecta si el input contiene una imagen. Formatos:
-      /img <ruta|url> [texto]     — comando explícito
-      /image <ruta|url> [texto]   — alias
-      <ruta_imagen>               — arrastrar archivo al terminal (ruta suelta)
-      <ruta_imagen> <texto>       — ruta + pregunta
-      file://<ruta>               — prefijo file:// que algunos terminales añaden
-    Devuelve (texto, ruta) o (inp, None).
+    Detect if input contains an image. Formats:
+      /img <path|url> [text]     — explicit command
+      /image <path|url> [text]   — alias
+      <image_path>               — drag file to terminal
+      <image_path> <text>        — path + question
+      file://<path>              — file:// prefix
+    Returns (text, path) or (inp, None).
     """
     IMG_EXTS_SET = set(IMG_EXTS)
 
-    # 1. Comando explícito /img o /image
+    # 1. Explicit command /img or /image
     for prefix in ('/img ', '/image '):
         if inp.lower().startswith(prefix):
             rest = inp[len(prefix):].strip()
+            # #xyz-rainbow
             parts = rest.split(' ', 1)
-            return (parts[1] if len(parts) > 1 else "Describe esta imagen."), parts[0]
+            return (parts[1] if len(parts) > 1 else "Describe this image."), parts[0]
 
-    # 2. Prefijo file:// (drag desde algunos file managers)
-    clean = inp.strip().strip("'\"")
+    # 2. file:// prefix
+    clean = inp.strip().strip('"').strip("'")
     if clean.startswith('file://'):
         from urllib.parse import unquote
         path = unquote(clean[7:])
         if os.path.splitext(path)[1].lower() in IMG_EXTS_SET:
-            return "Describe esta imagen.", path
+            return "Describe this image.", path
 
-    # 3. Ruta suelta — puede tener texto después
-    #    Find the first "palabra" que sea un path de imagen existente
-    #    (cubre rutas con espacios escapados que el terminal pega con \ )
+    # 3. Loose path
     unescaped = clean.replace('\\ ', ' ')
-    # Intentar el input completo primero, luego la primera "palabra"
     candidates = [unescaped]
     if ' ' in unescaped:
-        # primera parte podría ser ruta, resto texto
-        # recorre de derecha a izquierda buscando extensión de imagen
         for i in range(len(unescaped), 0, -1):
             part = unescaped[:i]
             if os.path.splitext(part)[1].lower() in IMG_EXTS_SET:
@@ -1367,7 +1433,7 @@ def parse_image_input(inp):
         cand_exp = os.path.expandvars(os.path.expanduser(cand))
         if os.path.splitext(cand_exp)[1].lower() in IMG_EXTS_SET and os.path.exists(cand_exp):
             text_after = unescaped[len(cand):].strip()
-            return (text_after if text_after else "Describe esta imagen."), cand_exp
+            return (text_after if text_after else "Describe this image."), cand_exp
 
     return inp, None
 
@@ -1388,11 +1454,11 @@ def chat(preloaded_msgs=None):
             inp = input(f"\n  {C('ACCENT')}[XYZ]{C_RESET} {C('DIM')}>{C_RESET} ").strip()
             if not inp: continue
 
-            # Ctrl+Q → exit immediately (sent as \x11 by most terminals)
+            # Ctrl+Q → exit immediately
             if inp == '\x11':
                 break
 
-            # ── Comandos ──
+            # ── Commands ──
             if inp.lower() == '/exit': break
             if inp.lower() == '/settings':
                 open_settings(); show_thinking = session.thinking_mode != "OFF"
@@ -1421,36 +1487,11 @@ def chat(preloaded_msgs=None):
                     print(f"\n  {C('OK')}✓ Conversation loaded ({len([m for m in msgs if m['role']=='user'])} messages){C_RESET}\n")
                 clear_screen(); print(get_banner()); print_status(); continue
 
-            # ── Shell command (!cmd) ──
-            if inp.startswith('!'):
-                cmd = inp[1:].strip()
-                if cmd:
-                    print(f"\n  {C('TOOL')}$ {cmd}{C_RESET}")
-                    try:
-                        result = subprocess.run(
-                            cmd, shell=True, capture_output=True, text=True, timeout=30
-                        )
-                        output = (result.stdout + result.stderr).strip()
-                    except subprocess.TimeoutExpired:
-                        output = "[timeout after 30s]"
-                    except Exception as e:
-                        output = f"[error: {e}]"
-                    if output:
-                        print(f"{C('TOOL_R')}{output}{C_RESET}\n")
-                    else:
-                        print(f"  {C('DIM')}(no output){C_RESET}\n")
-                    # Inject into conversation so model sees it
-                    shell_ctx = f"Shell command run by user:\n$ {cmd}\n{output or '(no output)'}"
-                    msgs.append({'role': 'user', 'content': shell_ctx})
-                    msgs.append({'role': 'assistant', 'content': 'Noted.'})
-                continue
-
-            # ── Imagen ──
+            # ── Image ──
             text, img_path = parse_image_input(inp)
             img_b64 = None
             if img_path:
                 if is_vision_model(session.model):
-                    # Modelo vision nativo: cargar imagen en base64
                     try:
                         print(f"  {C('DIM')}Loading image…{C_RESET}", end="", flush=True)
                         img_b64 = load_image_b64(img_path)
@@ -1460,33 +1501,27 @@ def chat(preloaded_msgs=None):
                         print(f"\r  {C('ERR')}✗ Could not load image: {e}{C_RESET}\n")
                         continue
                 else:
-                    # Modelo sin vision: redirigir a tool describe_image/ocr_image
-                    tool_enabled_names = [t['function']['name'] for t in get_active_tools()]
-                    if 'describe_image' in tool_enabled_names or 'ocr_image' in tool_enabled_names:
+                    active_tool_names = [t['function']['name'] for t in get_active_tools()]
+                    if 'describe_image' in active_tool_names or 'ocr_image' in active_tool_names:
                         print(f"  {C('INFO')}Non-vision model — using tools to analyze image…{C_RESET}\n")
-                        # Inyectar la ruta en el mensaje para que el modelo llame la tool
                         inp = f"{text}\nImage to analyze: {img_path}"
-                        img_path = None  # no enviar como imagen nativa
+                        img_path = None
                     else:
                         print(f"\n  {C('WARN')}⚠ Non-vision model and describe_image/ocr_image tools are disabled.")
                         print(f"  {C('DIM')}Enable tools in /tools or use a vision model.{C_RESET}\n")
                         continue
 
-            # Guard: modelo seleccionado
             if not session.model:
                 print(f"\n  {C('ERR')}✗ No model selected. Use /settings to choose one.{C_RESET}")
                 continue
 
-            # Construir mensaje de usuario
             if img_b64:
                 user_msg = {'role': 'user', 'content': inp, 'images': [img_b64]}
             else:
                 user_msg = {'role': 'user', 'content': inp}
             msgs.append(user_msg)
 
-            # ── Llamada al modelo ──
             active_tools = get_active_tools()
-            # Los modelos vision no suelen soportar tools simultáneamente
             use_tools = active_tools if (active_tools and not img_b64) else None
 
             try:
@@ -1500,7 +1535,7 @@ def chat(preloaded_msgs=None):
                 full_content = stream_response(response, show_thinking=show_thinking)
 
             except Exception as e:
-                msgs.pop()  # quitar el mensaje del usuario que falló
+                msgs.pop()
                 print(f"\n  {C('ERR')}✗ Error communicating with model: {e}{C_RESET}")
                 if 'model' in str(e).lower() or 'not found' in str(e).lower():
                     print(f"  {C('WARN')}Model '{session.model}' may not be available. Use /settings to change it.{C_RESET}")
@@ -1511,8 +1546,6 @@ def chat(preloaded_msgs=None):
             ast_msg = {'role': 'assistant', 'content': full_content}
             msgs.append(ast_msg)
 
-            # ── Tool calls: siempre verificar cuando hay tools activas ──
-            # El stream no expone tool_calls chunk a chunk — hay que re-invocar sin stream
             if active_tools and not img_b64:
                 try:
                     r2 = client.chat(model=session.model, messages=msgs[:-1], tools=active_tools, stream=False)
@@ -1541,19 +1574,17 @@ def chat(preloaded_msgs=None):
                 except Exception as e:
                     print(f"\n  {C('ERR')}✗ Error processing tool calls: {e}{C_RESET}")
 
-            # Autoguardado
             save_session(msgs, session_id)
 
         except KeyboardInterrupt:
             import time
             now = time.time()
             if now - _last_ctrl_c < 2.0:
-                # Double Ctrl+C within 2 seconds → exit
                 save_session(msgs, session_id)
                 print(f"\n  {C('DIM')}Bye.{C_RESET}\n")
                 break
             _last_ctrl_c = now
-            print(f"\n  {C('DIM')}Ctrl+C again or Ctrl+Q to quit.{C_RESET}")
+            print(f"\n  {C('DIM')}{T('ctrl_q_hint')}{C_RESET}")
         except Exception as e:
             print(f"\n  {C('ERR')}✗ Unexpected error: {e}{C_RESET}")
 
@@ -1602,6 +1633,7 @@ def ensure_ollama_running():
             kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
         else:
             kwargs['start_new_session'] = True
+        # #rainbow@rainbowtechnology.xyz
         _ollama_proc = subprocess.Popen(['ollama', 'serve'], **kwargs)
     except Exception as e:
         print(f"  {C('ERR')}✗ Could not start ollama serve: {e}{C_RESET}\n")
@@ -1617,7 +1649,7 @@ def ensure_ollama_running():
         print(f"\r  {C('THINK')}[{bar}]{C_RESET} {C('DIM')}waiting for ollama…{C_RESET}  ", end="", flush=True)
         try:
             client.list()
-            print(f"\n\n  {C('OK')}✓ Ollama ready.{C_RESET}\n")
+            print(f"\n\n  {C('OK')}✓ {T('ready')}.{C_RESET}\n")
             return True
         except Exception:
             pass
@@ -1635,6 +1667,7 @@ def stop_ollama_if_we_started():
 
 # ── ENTRY POINT ────────────────────────────────────────────────────────────────
 def main():
+    # #rainbow.xyz
     if len(sys.argv) >= 3 and sys.argv[1].lower() == 'pull':
         if not ensure_ollama_running(): return
         pull_model(sys.argv[2]); return

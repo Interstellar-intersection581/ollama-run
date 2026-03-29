@@ -14,7 +14,7 @@ An advanced Ollama orchestrator with tools, skills, persistent history, visual t
 - **Integrated tools** — Web search, shell execution (`!command`), Logseq, system status. Toggle with `/tools`
 - **Skills** — Activatable AI roles (code review, translation, SQL, security…). Toggle with `/skills`
 - **Search tools & skills** — Find and install new tools/skills from their menus
-- **Persistent history** — Auto-saved to `~/.ollama-run/sessions/`. Load with `/history`
+- **Persistent history** — Auto-saved. Load with `/history`
 - **Visual themes** — `default`, `matrix`, `dracula`, `amber`, `mono`. Change in `/settings`
 - **Model search & pull** — `/search` with `→` to browse variants, or `ollama-run pull <model>`
 - **Input history** — Navigate previous prompts with `↑`/`↓` in chat
@@ -26,7 +26,7 @@ An advanced Ollama orchestrator with tools, skills, persistent history, visual t
 - **Herramientas integradas** — Búsqueda web, shell (`!comando`), Logseq, estado del sistema. Toggle con `/tools`
 - **Skills** — Roles de IA activables (code review, traducción, SQL, seguridad…). Toggle con `/skills`
 - **Buscar tools y skills** — Encuentra e instala nuevas tools/skills desde sus menús
-- **Historial persistente** — Guardado automático en `~/.ollama-run/sessions/`. Cargar con `/history`
+- **Historial persistente** — Guardado automático. Cargar con `/history`
 - **Temas visuales** — `default`, `matrix`, `dracula`, `amber`, `mono`. Cambia en `/settings`
 - **Buscar y descargar modelos** — `/search` con `→` para ver variantes, o `ollama-run pull <modelo>`
 - **Historial de entrada** — Navega prompts anteriores con `↑`/`↓` en el chat
@@ -138,14 +138,17 @@ ollama-run
 
 ## Data files / Archivos de datos
 
-```
-~/.ollama-run/
-├── config.json          # Persistent config — Configuración persistente
-├── input_history        # Chat input history — Historial de entrada
-├── sessions/            # Saved conversations — Conversaciones guardadas
-├── skills_catalog.json  # Installed skills — Skills instaladas
-└── custom_tools.json    # Custom tools — Herramientas personalizadas
-```
+Data is stored according to OS conventions:
+- **Linux:** `~/.config/ollama-run/`
+- **macOS:** `~/Library/Application Support/ollama-run/`
+- **Windows:** `%APPDATA%\ollama-run\`
+
+---
+
+Los datos se guardan según las convenciones del sistema operativo:
+- **Linux:** `~/.config/ollama-run/`
+- **macOS:** `~/Library/Application Support/ollama-run/`
+- **Windows:** `%APPDATA%\ollama-run\`
 
 ---
 
@@ -173,4 +176,4 @@ Este software está licenciado **exclusivamente para uso personal y no comercial
 
 ---
 
-#xyz-rainbow | #xyz-rainbowtechnology | #rainbowtechnology.xyz
+#xyz-rainbow | #xyz-rainbowtechnology | #rainbow.xyz
